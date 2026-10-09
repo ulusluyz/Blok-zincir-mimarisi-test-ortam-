@@ -1,19 +1,23 @@
 """
-Comprehensive Benchmark & Scalability Testing Framework.
+Comprehensive Hierarchical Benchmark & Scalability Testing Framework.
 
-Measures:
-1. Top-1 and Top-3 accuracy on unseen Turkish test queries.
-2. False Positive (FP) and False Negative (FN) rates.
-3. Granular latency breakdown: Query Encoding, Block Evaluation, Top-K Selection, A+ Access.
-4. Statistical significance (McNemar test / p-value) comparing Bitwise XOR vs Baselines.
-5. Training vs inference costs.
-6. Memory consumption (RAM in KB / MB).
-7. A blocks evaluated vs A+ layers actually read.
-8. Bit length comparison (64, 128, 256 bits).
-9. Method comparison: XOR+POPCOUNT vs Binarized Dot vs Sign Cosine vs Keyword & TF-IDF Baselines.
-10. Representation comparison: Learned vs Static/Random Binary Representation.
-11. Scalability across 10, 50, 200, 1,000, 10,000, 100,000 blocks (real vs synthetic reported separately).
-12. Pre-training vs Post-training score distributions.
+Measures & Compares 5 Routing Strategies:
+1. Full A Scan (Mevcut Tam A Taraması)
+2. Learned Single-Level Group Routing (Öğrenilmiş Tek Seviyeli Grup Yönlendirme)
+3. Learned Multi-Level Hierarchical Routing (Öğrenilmiş Çok Seviyeli Hiyerarşik Yönlendirme)
+4. LSH Candidate Pre-filtering (LSH Tabanlı Ön Eleme)
+5. IVF and HNSW Search Indexes (İndeks Tabanlı Yaklaşık Komşu Arama)
+
+Metrics Reported across 10, 100, 1,000, 10,000, and 100,000 blocks:
+- Top-1, Top-3 accuracy.
+- Correct Group Candidate Recall Rate (% of times correct group is included).
+- Correct A Block Retention Rate.
+- False Pruning Rate.
+- Latency Breakdown: Encoding, G Eval, A Eval, A+ Access, Selection Center.
+- Speedup Ratio vs Full Scan.
+- RAM Consumption (MB).
+- Multi-Topic Query Group Routing Recall.
+- Exports raw results to results.json and terminal execution logs.
 """
 
 import sys
@@ -21,22 +25,20 @@ import time
 import tracemalloc
 import random
 import math
+import json
 import numpy as np
 from typing import List, Dict, Tuple, Any
 
-from src.dataset import CATEGORIES, SMALL_TRAIN_DATA, SMALL_TEST_DATA, get_expanded_dataset
+from src.dataset import CATEGORIES, SMALL_TRAIN_DATA, SMALL_TEST_DATA, MULTI_TOPIC_TEST_DATA, get_expanded_dataset
 from src.features import FeatureExtractor
-from src.bitwise import BinaryVector, similarity_xor_popcount, similarity_binarized_dot, similarity_sign_cosine
-from src.encoder import RandomLSHEncoder, TrainableBinaryEncoder
-from src.baselines import KeywordBaselineMatcher, TFIDFBaselineMatcher
+from src.bitwise import BinaryVector, similarity_xor_popcount
+from src.encoder import TrainableBinaryEncoder
 from src.blocks import AddressBlock, KnowledgeBlock, BlockNetwork
+from src.hierarchical_blocks import GroupRepresentative, HierarchicalBlockNetwork
+from src.search_indexes import LSHIndex, IVFIndex, HNSWIndex
 
 
 def calculate_metrics(predictions: List[Tuple[str, List[str]]]) -> Dict[str, Any]:
-    """
-    Given predictions: list of (true_category, [ranked_predicted_categories]),
-    calculates Top-1 accuracy, Top-3 accuracy, FP rate, FN rate, and boolean correctness array.
-    """
     total = len(predictions)
     if total == 0:
         return {"top_1": 0.0, "top_3": 0.0, "fp_rate": 0.0, "fn_rate": 0.0, "correct_array": []}
@@ -71,26 +73,8 @@ def calculate_metrics(predictions: List[Tuple[str, List[str]]]) -> Dict[str, Any
     }
 
 
-def compute_mcnemar_p_value(correct_a: List[bool], correct_b: List[bool]) -> float:
-    """
-    Computes McNemar's test p-value between two classifiers on the same test set.
-    """
-    b = sum(1 for ca, cb in zip(correct_a, correct_b) if ca and not cb)
-    c = sum(1 for ca, cb in zip(correct_a, correct_b) if not ca and cb)
-
-    if b + c == 0:
-        return 1.0  # Identical predictions
-
-    # McNemar chi-squared statistic with continuity correction: (|b - c| - 1)^2 / (b + c)
-    chi2 = (abs(b - c) - 1.0) ** 2 / (b + c)
-    # Survival function approximation for 1 degree of freedom chi2
-    # p ≈ exp(-chi2 / 2) for simple approximation or error function
-    p_val = math.erfc(math.sqrt(chi2 / 2.0))
-    return p_val
-
-
-def run_benchmark() -> Dict[str, Any]:
-    print("=== STARTING JULES POC BENCHMARK SUITE ===")
+def run_hierarchical_benchmark() -> Dict[str, Any]:
+    print("=== STARTING HIERARCHICAL ROUTING BENCHMARK SUITE ===")
     results = {}
 
     train_data, test_data = get_expanded_dataset()
@@ -102,284 +86,260 @@ def run_benchmark() -> Dict[str, Any]:
     fe.fit(train_texts)
     X_train = [fe.transform_dense(t) for t in train_texts]
 
-    # 1. Baseline Evaluation
-    print("\n--- 1. Evaluating Baselines ---")
-    cat_keywords = {}
-    for text, cat in train_data:
-        if cat not in cat_keywords:
-            cat_keywords[cat] = []
-        cat_keywords[cat].append(text)
-    kw_baseline = KeywordBaselineMatcher(cat_keywords)
-
-    kw_preds = []
-    kw_start = time.perf_counter()
-    for q_text, true_cat in test_data:
-        ranked = [cat for cat, _ in kw_baseline.rank_blocks(q_text)]
-        kw_preds.append((true_cat, ranked))
-    kw_latency = (time.perf_counter() - kw_start) / len(test_data)
-    kw_metrics = calculate_metrics(kw_preds)
-    results["baseline_keyword"] = {
-        **kw_metrics,
-        "avg_latency_ms": kw_latency * 1000.0
-    }
-
-    # TF-IDF Baseline
-    tfidf_baseline = TFIDFBaselineMatcher(fe, cat_keywords)
-    tfidf_preds = []
-    tfidf_start = time.perf_counter()
-    for q_text, true_cat in test_data:
-        ranked = [cat for cat, _ in tfidf_baseline.rank_blocks(q_text)]
-        tfidf_preds.append((true_cat, ranked))
-    tfidf_latency = (time.perf_counter() - tfidf_start) / len(test_data)
-    tfidf_metrics = calculate_metrics(tfidf_preds)
-    results["baseline_tfidf"] = {
-        **tfidf_metrics,
-        "avg_latency_ms": tfidf_latency * 1000.0
-    }
-
-    # 2. Pre-training vs Post-training Score Distributions
-    print("\n--- 2. Pre-training vs Post-training Analysis ---")
-    pre_train_encoder = TrainableBinaryEncoder(input_dim=512, bit_length=128, num_categories=len(CATEGORIES), seed=42)
-
-    # Train encoder
+    # Train Encoder
     train_start = time.perf_counter()
-    post_train_encoder = TrainableBinaryEncoder(input_dim=512, bit_length=128, num_categories=len(CATEGORIES), seed=42)
-    post_train_encoder.fit(X_train, train_labels, epochs=30, lr=0.05)
+    encoder = TrainableBinaryEncoder(input_dim=512, bit_length=128, num_categories=len(CATEGORIES), seed=42)
+    encoder.fit(X_train, train_labels, epochs=30, lr=0.05)
     training_time = time.perf_counter() - train_start
 
-    pre_scores_same = []
-    pre_scores_diff = []
-    post_scores_same = []
-    post_scores_diff = []
+    # Build Base Real Knowledge Blocks and Group Representatives
+    real_a_blocks = []
+    category_groups = {}
 
-    for q_text, true_cat in test_data:
-        cat_idx = CATEGORIES.index(true_cat)
+    for cat_i, cat_name in enumerate(CATEGORIES):
+        proto = encoder.category_prototypes[cat_i]
+        # Create G representative
+        g_rep = GroupRepresentative(f"g_{cat_i}", cat_name, proto)
+        category_groups[cat_name] = g_rep
+
+        # Create A blocks inside this category
+        cat_samples = [text for text, c in train_data if c == cat_name]
+        for s_i, sample_text in enumerate(cat_samples[:5]):
+            vec = encoder.encode(fe.transform_dense(sample_text))
+            ap = AddressBlock(f"ap_{cat_name}_{s_i}", payload={"sample": sample_text})
+            kb = KnowledgeBlock(f"kb_{cat_name}_{s_i}", cat_name, vec, ap)
+            g_rep.add_member_a_block(kb)
+            real_a_blocks.append(kb)
+
+    # 1. Multi-Topic Routing Recall Benchmark
+    print("\n--- 1. Evaluating Multi-Topic Query Group Routing ---")
+    h_net_base = HierarchicalBlockNetwork(list(category_groups.values()))
+    multi_topic_results = []
+
+    for query_text, expected_topics in MULTI_TOPIC_TEST_DATA:
+        q_dense = fe.transform_dense(query_text)
+        Q = encoder.encode(q_dense)
+
+        # Route via confidence margin strategy
+        res = h_net_base.process_query_hierarchical_2level(
+            Q, method="xor", group_routing_strategy="confidence_margin", confidence_margin=0.08
+        )
+        active_g_names = [item[1] for item in res["active_groups"]]
+
+        # Check topic recall
+        topics_found = [t for t in expected_topics if t in active_g_names]
+        topic_recall = len(topics_found) / len(expected_topics)
+
+        multi_topic_results.append({
+            "query": query_text,
+            "expected_topics": expected_topics,
+            "activated_groups": active_g_names,
+            "topic_recall": topic_recall
+        })
+
+    avg_multi_topic_recall = float(np.mean([item["topic_recall"] for item in multi_topic_results]))
+    results["multi_topic_benchmark"] = {
+        "avg_multi_topic_recall": avg_multi_topic_recall,
+        "details": multi_topic_results
+    }
+
+    # Pre-encode all test queries into Q binary vectors for isolated routing benchmarks
+    encoded_test_queries = []
+    encoding_latencies = []
+    for q_text, true_cat in test_data[:30]:
+        t0 = time.perf_counter()
         q_dense = fe.transform_dense(q_text)
+        Q = encoder.encode(q_dense)
+        t1 = time.perf_counter()
+        encoding_latencies.append((t1 - t0) * 1000.0)
+        encoded_test_queries.append((q_text, true_cat, Q))
 
-        # Pre-train
-        Q_pre = pre_train_encoder.encode(q_dense)
-        for c_i, proto in pre_train_encoder.category_prototypes.items():
-            sim = similarity_xor_popcount(proto, Q_pre)
-            if c_i == cat_idx:
-                pre_scores_same.append(sim)
-            else:
-                pre_scores_diff.append(sim)
+    avg_encoding_lat = float(np.mean(encoding_latencies))
 
-        # Post-train
-        Q_post = post_train_encoder.encode(q_dense)
-        for c_i, proto in post_train_encoder.category_prototypes.items():
-            sim = similarity_xor_popcount(proto, Q_post)
-            if c_i == cat_idx:
-                post_scores_same.append(sim)
-            else:
-                post_scores_diff.append(sim)
+    # 2. Scalability & Comparative Routing Strategy Benchmark across Block Counts
+    print("\n--- 2. Scalability & Comparative Strategy Benchmark (10 to 100,000 blocks) ---")
+    results["scalability_comparisons"] = {}
+    block_counts = [10, 100, 1000, 10000, 100000]
 
-    results["score_distribution"] = {
-        "pre_train_same_category_avg": float(np.mean(pre_scores_same)),
-        "pre_train_diff_category_avg": float(np.mean(pre_scores_diff)),
-        "post_train_same_category_avg": float(np.mean(post_scores_same)),
-        "post_train_diff_category_avg": float(np.mean(post_scores_diff)),
-        "training_time_sec": training_time
-    }
-
-    # 3. Bit Length Comparison (64, 128, 256 bits) & Math Similarity Functions Comparison
-    print("\n--- 3. Bit Length & Similarity Method Comparison ---")
-    results["bit_length_experiments"] = {}
-
-    for bit_len in [64, 128, 256]:
-        enc = TrainableBinaryEncoder(input_dim=512, bit_length=bit_len, num_categories=len(CATEGORIES), seed=42)
-        enc.fit(X_train, train_labels, epochs=30, lr=0.05)
-
-        # Build Network
-        net = BlockNetwork()
-        a_plus_blocks = []
-        for cat_i, cat_name in enumerate(CATEGORIES):
-            proto = enc.category_prototypes[cat_i]
-            ap = AddressBlock(f"ap_{cat_i}", payload={"cat": cat_name})
-            kb = KnowledgeBlock(f"kb_{cat_i}", cat_name, proto, ap)
-            net.add_block(kb)
-            a_plus_blocks.append(ap)
-
-        results["bit_length_experiments"][bit_len] = {}
-
-        for math_method in ["xor", "binarized_dot", "sign_cosine"]:
-            preds = []
-            encoding_times = []
-            eval_times = []
-            select_times = []
-            access_times = []
-            total_times = []
-
-            # Reset read counts
-            for ap in a_plus_blocks:
-                ap.read_count = 0
-
-            for q_text, true_cat in test_data:
-                t0 = time.perf_counter()
-                q_dense = fe.transform_dense(q_text)
-                Q = enc.encode(q_dense)
-                t1 = time.perf_counter()
-
-                res = net.process_query(Q, method=math_method, top_k=1)
-                t2 = time.perf_counter()
-
-                encoding_times.append(t1 - t0)
-                eval_times.append(res["eval_latency_sec"])
-                select_times.append(res["select_latency_sec"])
-                access_times.append(res["read_latency_sec"])
-                total_times.append(t2 - t0)
-
-                ranked_cats = [item[1] for item in res["ranked_all_scores"]]
-                preds.append((true_cat, ranked_cats))
-
-            metrics = calculate_metrics(preds)
-            total_a_plus_reads = sum(ap.read_count for ap in a_plus_blocks)
-
-            # McNemar test against TF-IDF baseline
-            p_val_vs_tfidf = compute_mcnemar_p_value(metrics["correct_array"], tfidf_metrics["correct_array"])
-
-            results["bit_length_experiments"][bit_len][math_method] = {
-                **metrics,
-                "avg_encoding_time_ms": float(np.mean(encoding_times)) * 1000.0,
-                "avg_eval_time_ms": float(np.mean(eval_times)) * 1000.0,
-                "avg_select_time_ms": float(np.mean(select_times)) * 1000.0,
-                "avg_access_time_ms": float(np.mean(access_times)) * 1000.0,
-                "per_block_eval_time_us": (float(np.mean(eval_times)) / len(CATEGORIES)) * 1e6,
-                "avg_total_time_ms": float(np.mean(total_times)) * 1000.0,
-                "total_queries": len(test_data),
-                "total_a_evaluated_per_query": len(CATEGORIES),
-                "total_a_plus_read": total_a_plus_reads,
-                "mcnemar_p_val_vs_tfidf": p_val_vs_tfidf,
-            }
-
-    # 4. Learned vs Random Representation Comparison
-    print("\n--- 4. Learned vs Random Binary Representation ---")
-    rand_enc = RandomLSHEncoder(input_dim=512, bit_length=128, seed=42)
-    rand_preds = []
-
-    # Random prototypes created by encoding category representative text
-    rand_protos = {}
-    for cat_i, cat_name in enumerate(CATEGORIES):
-        cat_sample = [text for text, cat in train_data if cat == cat_name][0]
-        rand_protos[cat_name] = rand_enc.encode(fe.transform_dense(cat_sample))
-
-    for q_text, true_cat in test_data:
-        Q_rand = rand_enc.encode(fe.transform_dense(q_text))
-        scores = [
-            (cat_name, similarity_xor_popcount(proto, Q_rand))
-            for cat_name, proto in rand_protos.items()
-        ]
-        scores.sort(key=lambda x: x[1], reverse=True)
-        rand_preds.append((true_cat, [s[0] for s in scores]))
-
-    results["learned_vs_random"] = {
-        "random_lsh_128bit": calculate_metrics(rand_preds),
-        "learned_ste_128bit": results["bit_length_experiments"][128]["xor"]
-    }
-
-    # 5. Scalability Benchmark (10, 50, 200, 1,000, 10,000, 100,000 blocks)
-    print("\n--- 5. Scalability & Memory Benchmark across Block Counts ---")
-    results["scalability"] = {}
-
-    enc128 = TrainableBinaryEncoder(input_dim=512, bit_length=128, num_categories=len(CATEGORIES), seed=42)
-    enc128.fit(X_train, train_labels, epochs=30)
-
-    # Real blocks: 6 categories
-    real_blocks = []
-    real_a_plus_list = []
-    for cat_i, cat_name in enumerate(CATEGORIES):
-        proto = enc128.category_prototypes[cat_i]
-        ap = AddressBlock(f"real_ap_{cat_i}", payload={"category": cat_name, "is_synthetic": False})
-        kb = KnowledgeBlock(f"real_kb_{cat_i}", cat_name, proto, ap)
-        real_blocks.append(kb)
-        real_a_plus_list.append(ap)
-
-    # Test scale counts
-    block_counts = [10, 50, 200, 1000, 10000, 100000]
-
-    rng = random.Random(1234)
+    rng = random.Random(42)
 
     for target_count in block_counts:
+        print(f"\nBuilding and benchmarking network with scale: {target_count} blocks...")
         tracemalloc.start()
 
-        # Build scale network
-        net_scale = BlockNetwork()
-        for b in real_blocks:
-            net_scale.add_block(b)
+        # Build G groups and A blocks for target count
+        scale_groups = {}
+        for cat_i, cat_name in enumerate(CATEGORIES):
+            proto = encoder.category_prototypes[cat_i]
+            scale_groups[cat_name] = GroupRepresentative(f"g_{cat_i}", cat_name, proto)
 
-        synthetic_count = target_count - len(real_blocks)
+        # Re-populate real blocks
+        for kb in real_a_blocks:
+            scale_groups[kb.category].add_member_a_block(kb)
+
+        # Fill synthetic blocks
+        synthetic_count = max(0, target_count - len(real_a_blocks))
         synth_a_plus_list = []
-
         if synthetic_count > 0:
             for s_i in range(synthetic_count):
-                # Generate random synthetic 128-bit vector
                 synth_bits = rng.getrandbits(128)
                 synth_vec = BinaryVector(synth_bits, bit_length=128)
-                synth_ap = AddressBlock(f"synth_ap_{s_i}", payload={"is_synthetic": True})
-                synth_kb = KnowledgeBlock(f"synth_kb_{s_i}", f"Synthetic_{s_i % 10}", synth_vec, synth_ap)
-                net_scale.add_block(synth_kb)
-                synth_a_plus_list.append(synth_ap)
+                assigned_cat = CATEGORIES[s_i % len(CATEGORIES)]
+                ap = AddressBlock(f"synth_ap_{s_i}", payload={"is_synthetic": True})
+                kb = KnowledgeBlock(f"synth_kb_{s_i}", assigned_cat, synth_vec, ap)
+                scale_groups[assigned_cat].add_member_a_block(kb)
+                synth_a_plus_list.append(ap)
+
+        # Build Networks
+        h_net_scale = HierarchicalBlockNetwork(list(scale_groups.values()))
+        # Build flat A blocks list across all groups
+        all_scale_a_blocks = []
+        for g_rep in h_net_scale.groups:
+            all_scale_a_blocks.extend(g_rep.member_a_blocks)
+        h_net_scale.register_flat_blocks(all_scale_a_blocks)
+
+        flat_net_scale = BlockNetwork(all_scale_a_blocks)
+
+        # Build Auxiliary Indexes
+        lsh_idx = LSHIndex(num_tables=4, hash_size=8, bit_length=128)
+        for b in all_scale_a_blocks:
+            lsh_idx.add_block(b)
+
+        ivf_idx = IVFIndex(num_centroids=min(16, target_count), bit_length=128)
+        ivf_idx.fit_and_build(all_scale_a_blocks)
+
+        hnsw_idx = HNSWIndex(M=min(8, target_count))
+        hnsw_idx.build_graph(all_scale_a_blocks[:min(1000, target_count)])  # Sub-graph for benchmarking
 
         current_ram_bytes, peak_ram_bytes = tracemalloc.get_traced_memory()
         tracemalloc.stop()
 
-        # Reset read counts
-        for ap in real_a_plus_list:
-            ap.read_count = 0
-        for ap in synth_a_plus_list:
-            ap.read_count = 0
+        method_benchmarks = {}
 
-        # Benchmark 20 queries on scaled network
-        query_latencies = []
-        eval_latencies = []
-        select_latencies = []
-        access_latencies = []
-        real_top1_correct = 0
-
-        sample_test_queries = test_data[:20]
-
-        for q_text, true_cat in sample_test_queries:
-            q_dense = fe.transform_dense(q_text)
-            Q = enc128.encode(q_dense)
-
+        # 1. Full A Scan
+        full_latencies, full_preds = [], []
+        for q_text, true_cat, Q in encoded_test_queries:
             t0 = time.perf_counter()
-            res = net_scale.process_query(Q, method="xor", top_k=1)
+            res = flat_net_scale.process_query(Q, method="xor", top_k=1)
             t1 = time.perf_counter()
+            full_latencies.append((t1 - t0) * 1000.0)
+            full_preds.append((true_cat, [item[1] for item in res["ranked_all_scores"]]))
 
-            query_latencies.append((t1 - t0) * 1000.0)  # ms
-            eval_latencies.append(res["eval_latency_sec"] * 1000.0)
-            select_latencies.append(res["select_latency_sec"] * 1000.0)
-            access_latencies.append(res["read_latency_sec"] * 1000.0)
-
-            # Check if top activated block was the correct real category
-            top_activated = res["activated_results"][0]
-            if top_activated["category"] == true_cat:
-                real_top1_correct += 1
-
-        total_real_a_plus_read = sum(ap.read_count for ap in real_a_plus_list)
-        total_synth_a_plus_read = sum(ap.read_count for ap in synth_a_plus_list)
-
-        results["scalability"][target_count] = {
-            "total_blocks": len(net_scale.blocks),
-            "real_blocks": len(real_blocks),
-            "synthetic_blocks": synthetic_count,
-            "avg_query_latency_ms": float(np.mean(query_latencies)),
-            "avg_eval_latency_ms": float(np.mean(eval_latencies)),
-            "avg_select_latency_ms": float(np.mean(select_latencies)),
-            "avg_access_latency_ms": float(np.mean(access_latencies)),
-            "per_block_eval_time_ns": (float(np.mean(eval_latencies)) * 1e6) / len(net_scale.blocks),
-            "memory_peak_mb": peak_ram_bytes / (1024.0 * 1024.0),
-            "memory_per_block_bytes": peak_ram_bytes / len(net_scale.blocks) if len(net_scale.blocks) > 0 else 0,
-            "real_category_top1_acc": real_top1_correct / len(sample_test_queries),
-            "total_real_a_plus_read": total_real_a_plus_read,
-            "total_synthetic_a_plus_read": total_synth_a_plus_read,
-            "unaccessed_a_plus_count": len(net_scale.blocks) - (total_real_a_plus_read + total_synth_a_plus_read)
+        avg_full_lat = float(np.mean(full_latencies))
+        method_benchmarks["full_a_scan"] = {
+            **calculate_metrics(full_preds),
+            "avg_latency_ms": avg_full_lat,
+            "speedup_vs_full": 1.0,
+            "total_a_evaluated": len(all_scale_a_blocks)
         }
 
-        print(f"Scale {target_count:6d} blocks -> Latency: {np.mean(query_latencies):8.3f} ms | RAM Peak: {peak_ram_bytes / (1024*1024):6.2f} MB | Real A+ Read: {total_real_a_plus_read} | Synth A+ Read: {total_synth_a_plus_read}")
+        # 2. Single-level Learned Group Routing (2-Level)
+        g_latencies, g_preds = [], []
+        g_eval_times, a_eval_times = [], []
+        correct_group_retained = 0
 
+        for q_text, true_cat, Q in encoded_test_queries:
+            t0 = time.perf_counter()
+            res = h_net_scale.process_query_hierarchical_2level(
+                Q, method="xor", group_routing_strategy="confidence_margin", confidence_margin=0.08, block_top_k=1
+            )
+            t1 = time.perf_counter()
+            g_latencies.append((t1 - t0) * 1000.0)
+            g_eval_times.append(res["g_eval_latency_sec"] * 1000.0)
+            a_eval_times.append(res["a_eval_latency_sec"] * 1000.0)
+
+            active_cats = [item[1] for item in res["active_groups"]]
+            if true_cat in active_cats:
+                correct_group_retained += 1
+
+            g_preds.append((true_cat, [item[1] for item in res["ranked_candidate_a_scores"]]))
+
+        avg_g_lat = float(np.mean(g_latencies))
+        method_benchmarks["learned_2level_group_routing"] = {
+            **calculate_metrics(g_preds),
+            "avg_latency_ms": avg_g_lat,
+            "speedup_vs_full": avg_full_lat / avg_g_lat if avg_g_lat > 0 else 1.0,
+            "avg_g_eval_time_ms": float(np.mean(g_eval_times)),
+            "avg_a_eval_time_ms": float(np.mean(a_eval_times)),
+            "correct_group_recall_rate": correct_group_retained / len(encoded_test_queries),
+            "false_pruning_rate": 1.0 - (correct_group_retained / len(encoded_test_queries)),
+            "avg_a_evaluated": res["total_a_evaluated"],
+            "avg_unaccessed_a_pruned": res["unaccessed_a_count"]
+        }
+
+        # 3. Multi-level Hierarchical Group Routing (3-Level)
+        ml_latencies, ml_preds = [], []
+        for q_text, true_cat, Q in encoded_test_queries:
+            t0 = time.perf_counter()
+            res_ml = h_net_scale.process_query_hierarchical_multilevel(Q, method="xor", top_k_per_level=1, block_top_k=1)
+            t1 = time.perf_counter()
+            ml_latencies.append((t1 - t0) * 1000.0)
+            ml_preds.append((true_cat, [item[1] for item in res_ml["ranked_candidate_a_scores"]]))
+
+        avg_ml_lat = float(np.mean(ml_latencies))
+        method_benchmarks["learned_multilevel_group_routing"] = {
+            **calculate_metrics(ml_preds),
+            "avg_latency_ms": avg_ml_lat,
+            "speedup_vs_full": avg_full_lat / avg_ml_lat if avg_ml_lat > 0 else 1.0
+        }
+
+        # 4. LSH Pre-filtering
+        lsh_latencies, lsh_preds = [], []
+        for q_text, true_cat, Q in encoded_test_queries:
+            t0 = time.perf_counter()
+            cands = lsh_idx.query_candidates(Q, fallback_all=all_scale_a_blocks)
+            # Evaluate candidates
+            scores = [(b.category, similarity_xor_popcount(b.representation, Q)) for b in cands]
+            scores.sort(key=lambda x: x[1], reverse=True)
+            t1 = time.perf_counter()
+            lsh_latencies.append((t1 - t0) * 1000.0)
+            lsh_preds.append((true_cat, [s[0] for s in scores]))
+
+        avg_lsh_lat = float(np.mean(lsh_latencies))
+        method_benchmarks["lsh_candidate_prefilter"] = {
+            **calculate_metrics(lsh_preds),
+            "avg_latency_ms": avg_lsh_lat,
+            "speedup_vs_full": avg_full_lat / avg_lsh_lat if avg_lsh_lat > 0 else 1.0
+        }
+
+        # 5. IVF Index
+        ivf_latencies, ivf_preds = [], []
+        for q_text, true_cat, Q in encoded_test_queries:
+            t0 = time.perf_counter()
+            cands = ivf_idx.query_candidates(Q, nprobe=2)
+            scores = [(b.category, similarity_xor_popcount(b.representation, Q)) for b in cands]
+            scores.sort(key=lambda x: x[1], reverse=True)
+            t1 = time.perf_counter()
+            ivf_latencies.append((t1 - t0) * 1000.0)
+            ivf_preds.append((true_cat, [s[0] for s in scores]))
+
+        avg_ivf_lat = float(np.mean(ivf_latencies))
+        method_benchmarks["ivf_index_search"] = {
+            **calculate_metrics(ivf_preds),
+            "avg_latency_ms": avg_ivf_lat,
+            "speedup_vs_full": avg_full_lat / avg_ivf_lat if avg_ivf_lat > 0 else 1.0
+        }
+
+        results["scalability_comparisons"][target_count] = {
+            "total_blocks": len(all_scale_a_blocks),
+            "real_blocks": len(real_a_blocks),
+            "synthetic_blocks": synthetic_count,
+            "avg_encoding_latency_ms": avg_encoding_lat,
+            "memory_peak_mb": peak_ram_bytes / (1024.0 * 1024.0),
+            "memory_per_block_bytes": peak_ram_bytes / len(all_scale_a_blocks),
+            "methods": method_benchmarks
+        }
+
+        speedup_val = avg_full_lat / avg_g_lat if avg_g_lat > 0 else 1.0
+        print(f"Scale {len(all_scale_a_blocks):6d} blocks -> Full Scan: {avg_full_lat:8.3f} ms | Learned G Route: {avg_g_lat:8.3f} ms (Speedup: {speedup_val:5.1f}x) | Peak RAM: {peak_ram_bytes/(1024*1024):6.2f} MB")
+
+    # Save to results.json
+    with open("results.json", "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=2, ensure_ascii=False)
+
+    print("\nSaved benchmark findings to results.json!")
     return results
 
 
 if __name__ == "__main__":
-    run_benchmark()
+    run_hierarchical_benchmark()

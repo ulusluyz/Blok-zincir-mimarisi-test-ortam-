@@ -1,14 +1,14 @@
 """
-Dataset module providing controlled Turkish dataset samples across 6 categories:
+Dataset module providing controlled Turkish dataset samples across single-topic and multi-topic categories:
 1. Selamlaşma
 2. Gezegenler
 3. Hayvanlar
 4. Elektronik
 5. Matematik
 6. Alakasız (Out-of-Domain)
+7. Çok Konulu (Multi-Topic Combined Concepts)
 
-Includes initial small manually verifiable dataset and expanded dataset for independent generalization testing.
-Zero overlap/leakage between train and unseen test sets.
+Includes expanded training and unseen test sets with zero exact leakage and verified Jaccard near-duplicate audit.
 """
 
 from typing import List, Dict, Tuple
@@ -83,6 +83,16 @@ SMALL_TRAIN_DATA: List[Tuple[str, str]] = [
     ("Yaz tatilinde Ege sahillerine gideceğiz", "Alakasız"),
     ("Sinema bileti fiyatları ne kadar olmuş?", "Alakasız"),
     ("Domates çorbası kaşar rendesiyle servis edilir", "Alakasız"),
+]
+
+# Multi-Topic Turkish Test Queries targeting multiple groups simultaneously
+MULTI_TOPIC_TEST_DATA: List[Tuple[str, List[str]]] = [
+    ("Transistörün sıcaklıkla değişen davranışını matematiksel türevle açıkla", ["Elektronik", "Matematik"]),
+    ("Mars yüzeyindeki insansız uzay araçlarında kullanılan elektronik çipler", ["Gezegenler", "Elektronik"]),
+    ("Yunusların su altı navigasyonu ve ses dalgalarının matris hesabı", ["Hayvanlar", "Matematik"]),
+    ("Aslanların avlanma bölgesindeki yörünge ve alan hesabı", ["Hayvanlar", "Gezegenler"]),
+    ("Uzay istasyonundaki robotik kolların entegre devre tasarımı", ["Elektronik", "Gezegenler"]),
+    ("Deniz memelilerinin biyolojik yapısı ve elektronik çip entegrasyonu", ["Hayvanlar", "Elektronik"]),
 ]
 
 SMALL_TEST_DATA: List[Tuple[str, str]] = [
