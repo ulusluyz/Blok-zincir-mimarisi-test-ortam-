@@ -74,12 +74,14 @@ class KnowledgeBlock:
         self.category = category
         self.representation = representation  # Fixed N-bit vector
         self.address_block = address_block    # Decoupled A+ block
+        self.evaluation_count: int = 0         # Empirical evaluation method invocation tracker
 
     def evaluate_suitability(self, Q: BinaryVector, sim_func: Callable[[BinaryVector, BinaryVector], float]) -> float:
         """
         Pure low-cost mathematical suitability evaluation on A kernel.
         DOES NOT access or read A+ address block.
         """
+        self.evaluation_count += 1
         return sim_func(self.representation, Q)
 
     def read_address_block(self) -> Dict[str, Any]:
@@ -163,6 +165,7 @@ class BlockNetwork:
         return {
             "total_a_evaluated": len(self.blocks),
             "total_a_plus_read": len(accessed_a_plus_results),
+            "unaccessed_a_count": 0,
             "unaccessed_a_plus_count": len(self.blocks) - len(accessed_a_plus_results),
             "eval_latency_sec": eval_latency,
             "select_latency_sec": select_latency,

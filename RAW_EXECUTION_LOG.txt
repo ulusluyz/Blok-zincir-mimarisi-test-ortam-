@@ -1,0 +1,93 @@
+================================================================================
+RAW EXECUTION LOG - JULES TECHNICAL VERIFICATION AUDIT
+================================================================================
+Timestamp: 2026-10-09 14:13:59 UTC
+
+--- 1. AUDITING SPARSE ACTIVATION & METHOD INVOCATION COUNTERS ---
+=== AUDITING 100,000 SCALED NETWORK COUNTERS ===
+Query 1 ('Dünya hangi yıldızın etrafında döner?') [Strategy: Top-1 Group]:
+  Network Total G Groups: 6
+  Network Total A Blocks: 100000
+  Real G Evaluated Count: 6
+  Real A Evaluated Count: 16667 (Elenen / Değerlendirilmeyen: 83333)
+  Real A+ Read Count     : 1
+  Unselected G Member A Method Invocations: 0
+
+Query 2 ('Transistörün sıcaklıkla değişen davranışını matematiksel türevle açıkla') [Strategy: Margin Fallback]:
+  Fallback Triggered    : False (None)
+  Active G Groups Count : 1
+  Real G Evaluated Count: 6
+  Real A Evaluated Count: 16666 (Elenen / Değerlendirilmeyen: 83334)
+  Real A+ Read Count     : 1
+
+--- 2. AUDITING SINGLE-TOPIC AND MULTI-TOPIC RECALL METRICS ---
+=== SINGLE-TOPIC GROUP RECALL AUDIT ===
+Single-Topic Group Recall: 74.07% (40/54)
+
+=== MULTI-TOPIC GROUP RECALL AUDIT ===
+Query 1: 'Transistörün sıcaklıkla değişen davranışını matematiksel türevle açıkla'
+  Expected Topics : ['Elektronik', 'Matematik']
+  Top-1 Selected  : ['Matematik'] -> Found 1/2
+  Flex Selected   : ['Matematik']
+  Missing Topics  : ['Elektronik']
+  False Positives : []
+
+Query 2: 'Mars yüzeyindeki insansız uzay araçlarında kullanılan elektronik çipler'
+  Expected Topics : ['Gezegenler', 'Elektronik']
+  Top-1 Selected  : ['Alakasız'] -> Found 0/2
+  Flex Selected   : ['Alakasız', 'Gezegenler']
+  Missing Topics  : ['Elektronik']
+  False Positives : ['Alakasız']
+
+Query 3: 'Yunusların su altı navigasyonu ve ses dalgalarının matris hesabı'
+  Expected Topics : ['Hayvanlar', 'Matematik']
+  Top-1 Selected  : ['Matematik'] -> Found 1/2
+  Flex Selected   : ['Matematik']
+  Missing Topics  : ['Hayvanlar']
+  False Positives : []
+
+Query 4: 'Aslanların avlanma bölgesindeki yörünge ve alan hesabı'
+  Expected Topics : ['Hayvanlar', 'Gezegenler']
+  Top-1 Selected  : ['Alakasız'] -> Found 0/2
+  Flex Selected   : ['Alakasız']
+  Missing Topics  : ['Hayvanlar', 'Gezegenler']
+  False Positives : ['Alakasız']
+
+Query 5: 'Uzay istasyonundaki robotik kolların entegre devre tasarımı'
+  Expected Topics : ['Elektronik', 'Gezegenler']
+  Top-1 Selected  : ['Elektronik'] -> Found 1/2
+  Flex Selected   : ['Elektronik']
+  Missing Topics  : ['Gezegenler']
+  False Positives : []
+
+Query 6: 'Deniz memelilerinin biyolojik yapısı ve elektronik çip entegrasyonu'
+  Expected Topics : ['Hayvanlar', 'Elektronik']
+  Top-1 Selected  : ['Matematik'] -> Found 0/2
+  Flex Selected   : ['Matematik']
+  Missing Topics  : ['Hayvanlar', 'Elektronik']
+  False Positives : ['Matematik']
+
+=== SUMMARY METRICS ===
+Multi-Topic Recall (Before Fallback - Top-1 Only): 25.00%
+Multi-Topic Recall (After Fallback - Flex Margin): 33.33%
+Joint Selection Success Rate (All Topics Found): 0.00%
+Total Missing Expected Topics: 8
+False Positive Group Activation Rate: 42.86%
+
+--- 3. RUNNING REPEATED STATISTICAL BENCHMARK ACROSS SEEDS ---
+=== RUNNING STATISTICAL BENCHMARK (Seeds: 3, Queries/Seed: 10) ===
+
+Benchmarking target scale: 10 blocks across 3 seeds...
+  Scale     10 blocks -> Full Scan Mean:    0.658 ms | G Route Mean:    0.580 ms (Speedup:   1.1x) | RAM Mean:   0.01 MB
+
+Benchmarking target scale: 100 blocks across 3 seeds...
+  Scale    100 blocks -> Full Scan Mean:    0.765 ms | G Route Mean:    0.627 ms (Speedup:   1.2x) | RAM Mean:   0.05 MB
+
+Benchmarking target scale: 1000 blocks across 3 seeds...
+  Scale   1000 blocks -> Full Scan Mean:    2.061 ms | G Route Mean:    0.851 ms (Speedup:   2.4x) | RAM Mean:   0.66 MB
+
+Benchmarking target scale: 10000 blocks across 3 seeds...
+  Scale  10000 blocks -> Full Scan Mean:   26.059 ms | G Route Mean:    3.886 ms (Speedup:   6.7x) | RAM Mean:   6.81 MB
+
+Benchmarking target scale: 100000 blocks across 3 seeds...
+  Scale 100000 blocks -> Full Scan Mean:  361.002 ms | G Route Mean:  162.317 ms (Speedup:   2.2x) | RAM Mean:  68.45 MB
