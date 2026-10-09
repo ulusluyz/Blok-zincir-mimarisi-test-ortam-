@@ -1,0 +1,21 @@
+================================================================================
+LEARNABLE G COMPREHENSIVE BENCHMARK EXECUTION LOG
+================================================================================
+Timestamp: 2026-10-09 14:54:14 UTC
+
+=== STARTING LEARNABLE G COMPREHENSIVE BENCHMARK SUITE ===
+
+--- 1. Benchmarking 4 G Architectures ---
+Evaluating 1. Static G (Baseline Control)...
+Evaluating 2. Learnable Single G...
+Evaluating 3. Learnable Multi-Prototype G (M=3)...
+Evaluating 4. Dynamic Multi-Prototype G...
+
+--- 2. Sub-prototype Ablation Study (M = 1, 2, 3, 4, 8) ---
+
+--- 3. Scalability Benchmark across 1,000, 10,000, 100,000 blocks ---
+  Scale   1000 blocks -> Full:    1.703 ms | Learnable G:    1.322 ms (Speedup:   1.3x) | Peak RAM:   1.77 MB
+  Scale  10000 blocks -> Full:   22.797 ms | Learnable G:    5.233 ms (Speedup:   4.4x) | Peak RAM:   7.92 MB
+  Scale 100000 blocks -> Full:  263.096 ms | Learnable G:  144.390 ms (Speedup:   1.8x) | Peak RAM:  69.59 MB
+
+Saved learnable G benchmark results to LEARNABLE_G_RESULTS.json!

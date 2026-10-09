@@ -1,66 +1,30 @@
 """
-Hierarchical Routing and Sparse Block Activation Architecture.
-
-Components:
-1. GroupRepresentative (G):
-   - Fixed-size N-bit mathematical kernel learned from member samples.
-   - Evaluates group-level suitability S(G, Q).
-   - Serves strictly as a candidate router; does not alter internal A block responses.
-
-2. HierarchicalBlockNetwork:
-   - Supports 2-level routing (Q -> Active G -> Member A -> Activated A+).
-   - Supports Multi-Level (3+ depth tree) routing (Q -> Level-1 G -> Level-2 G -> Member A -> Activated A+).
-   - Supports 3 Multi-Group Routing Strategies:
-     a) Top-K Groups
-     b) Dynamic Threshold
-     c) Confidence / Margin-based flexible routing with Fallback.
-   - Guarantees Sparse Activation: Unselected groups NEVER evaluate their internal A kernels or read A+ address layers.
+Enhanced Hierarchical Routing and Multi-Topic Activation Network.
+Supports BaseGRepresentative implementations (Static, Learnable Single, Learnable Multi, Dynamic Multi).
 """
 
 from typing import List, Dict, Any, Optional, Callable, Tuple, Union
 import time
+import numpy as np
 from src.bitwise import BinaryVector, similarity_xor_popcount, similarity_binarized_dot, similarity_sign_cosine
 from src.blocks import AddressBlock, KnowledgeBlock, SIMILARITY_FUNCTIONS
+from src.learnable_g import BaseGRepresentative, StaticGRepresentative, LearnableSingleGRepresentative, LearnableMultiPrototypeGRepresentative, DynamicMultiPrototypeGRepresentative
 
-
-class GroupRepresentative:
-    """
-    G — Öğrenilmiş Grup Temsilcisi (Learned Group Representative).
-    Contains fixed-size N-bit representation learned from member blocks/samples.
-    Contains list of member KnowledgeBlocks (or subgroup G representatives).
-    """
-
-    def __init__(self, group_id: str, name: str, representation: BinaryVector):
-        self.group_id = group_id
-        self.name = name
-        self.representation = representation  # Fixed N-bit kernel
-        self.member_a_blocks: List[KnowledgeBlock] = []
-        self.subgroups: List['GroupRepresentative'] = []  # For multi-level tree hierarchy
-        self.evaluation_count: int = 0  # Tracker for G evaluations
-
-    def add_member_a_block(self, block: KnowledgeBlock):
-        self.member_a_blocks.append(block)
-
-    def add_subgroup(self, subgroup: 'GroupRepresentative'):
-        self.subgroups.append(subgroup)
-
-    def evaluate_suitability(self, Q: BinaryVector, sim_func: Callable[[BinaryVector, BinaryVector], float]) -> float:
-        """Evaluates group suitability S(G, Q). Does NOT evaluate member A or A+ blocks."""
-        self.evaluation_count += 1
-        return sim_func(self.representation, Q)
+# Backward compatibility alias
+GroupRepresentative = StaticGRepresentative
 
 
 class HierarchicalBlockNetwork:
     """
-    Orchestrates Sparse Hierarchical Routing across G representatives and A knowledge blocks.
-    Enforces that unselected groups' internal A kernels and A+ address blocks are NEVER evaluated.
+    Orchestrates Sparse Hierarchical Routing across learnable G representatives and A knowledge blocks.
+    Guarantees sparse block activation.
     """
 
-    def __init__(self, groups: Optional[List[GroupRepresentative]] = None):
-        self.groups: List[GroupRepresentative] = groups if groups is not None else []
-        self.flat_a_blocks: List[KnowledgeBlock] = []  # For full scan comparisons
+    def __init__(self, groups: Optional[List[BaseGRepresentative]] = None):
+        self.groups: List[BaseGRepresentative] = groups if groups is not None else []
+        self.flat_a_blocks: List[KnowledgeBlock] = []
 
-    def add_group(self, group: GroupRepresentative):
+    def add_group(self, group: BaseGRepresentative):
         self.groups.append(group)
         for a_block in group.member_a_blocks:
             if a_block not in self.flat_a_blocks:
@@ -73,21 +37,16 @@ class HierarchicalBlockNetwork:
         self,
         Q: BinaryVector,
         method: str = "xor",
-        group_routing_strategy: str = "confidence_margin",  # "top_k", "threshold", "confidence_margin"
+        group_routing_strategy: str = "confidence_margin",  # "top_k", "threshold", "confidence_margin", "dynamic_multi_label"
         group_top_k: int = 2,
         group_threshold: float = 0.50,
-        confidence_margin: float = 0.05,
+        confidence_margin: float = 0.08,
         min_group_confidence: float = 0.40,
         block_top_k: int = 1,
         sim_func: Optional[Callable[[BinaryVector, BinaryVector], float]] = None
     ) -> Dict[str, Any]:
         """
-        2-Level Hierarchical Routing:
-        1. Evaluate all G representatives: S(G, Q).
-        2. Select Active G Groups based on strategy (Top-K, Threshold, or Confidence/Margin with Fallback).
-        3. Evaluate A kernels ONLY inside active G groups.
-        4. Activate winning Top-K A blocks and read their A+ address layers.
-        5. Track granular latencies and counts.
+        2-Level Hierarchical Routing over BaseGRepresentative instances.
         """
         if sim_func is None:
             sim_func = SIMILARITY_FUNCTIONS.get(method, similarity_xor_popcount)
@@ -96,7 +55,7 @@ class HierarchicalBlockNetwork:
 
         # Step 1: Evaluate G Representatives
         start_g_time = time.perf_counter()
-        g_scores: List[Tuple[GroupRepresentative, float]] = []
+        g_scores: List[Tuple[BaseGRepresentative, float]] = []
         for g in self.groups:
             score = g.evaluate_suitability(Q, sim_func)
             g_scores.append((g, score))
@@ -106,7 +65,7 @@ class HierarchicalBlockNetwork:
         start_g_select_time = time.perf_counter()
         g_scores.sort(key=lambda x: x[1], reverse=True)
 
-        active_groups: List[Tuple[GroupRepresentative, float]] = []
+        active_groups: List[Tuple[BaseGRepresentative, float]] = []
         fallback_triggered = False
         fallback_reason = "None"
 
@@ -116,10 +75,20 @@ class HierarchicalBlockNetwork:
         elif group_routing_strategy == "threshold":
             active_groups = [item for item in g_scores if item[1] >= group_threshold]
             if not active_groups:
-                # Safety: if no group meets threshold, open top-1 group
                 active_groups = g_scores[:1]
                 fallback_triggered = True
                 fallback_reason = "No group met threshold"
+
+        elif group_routing_strategy == "dynamic_multi_label":
+            # Multi-label activation: Top-1 group AND any group within relative margin
+            if not g_scores:
+                active_groups = []
+            else:
+                top1_score = g_scores[0][1]
+                active_groups = [
+                    item for item in g_scores
+                    if (top1_score - item[1]) <= confidence_margin or item[1] >= group_threshold
+                ]
 
         elif group_routing_strategy == "confidence_margin":
             if not g_scores:
@@ -128,21 +97,15 @@ class HierarchicalBlockNetwork:
                 top1_g, top1_score = g_scores[0]
                 top2_score = g_scores[1][1] if len(g_scores) > 1 else 0.0
 
-                # Check confidence conditions
                 if top1_score < min_group_confidence:
-                    # Low overall confidence: Fallback to evaluating MORE groups (or full scan)
-                    active_groups = g_scores  # Evaluate all groups
+                    active_groups = g_scores  # Fallback: evaluate all groups
                     fallback_triggered = True
                     fallback_reason = f"Low G top1 score ({top1_score:.3f} < {min_group_confidence:.3f})"
                 elif (top1_score - top2_score) < confidence_margin:
-                    # Ambiguous/Close margin: Open top multiple candidate groups
-                    active_groups = [g_scores[0], g_scores[1]]
-                    if len(g_scores) > 2 and (top1_score - g_scores[2][1]) < confidence_margin:
-                        active_groups.append(g_scores[2])
+                    active_groups = [item for item in g_scores if (top1_score - item[1]) <= confidence_margin]
                     fallback_triggered = True
                     fallback_reason = f"Close margin ({top1_score - top2_score:.3f} < {confidence_margin:.3f})"
                 else:
-                    # High confidence single group
                     active_groups = [g_scores[0]]
 
         else:
@@ -188,7 +151,6 @@ class HierarchicalBlockNetwork:
         a_plus_latency = time.perf_counter() - start_a_plus_time
 
         total_latency = time.perf_counter() - start_time
-
         total_a_in_network = len(self.flat_a_blocks) if self.flat_a_blocks else sum(len(g.member_a_blocks) for g in self.groups)
 
         return {

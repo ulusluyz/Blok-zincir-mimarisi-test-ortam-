@@ -1,0 +1,103 @@
+{
+  "architectures_comparison": {
+    "static_g": {
+      "single_topic_top1_acc": 0.12,
+      "single_topic_group_recall": 0.76,
+      "multi_topic_group_recall": 0.6521739130434783,
+      "multi_topic_joint_selection_recall": 0.3,
+      "multi_topic_fp_rate": 0.7368421052631579,
+      "encoder_w_drift": 41.80010223481917,
+      "average_g_drift": 0.0
+    },
+    "learnable_single_g": {
+      "single_topic_top1_acc": 0.14,
+      "single_topic_group_recall": 0.42000000000000004,
+      "multi_topic_group_recall": 0.41304347826086957,
+      "multi_topic_joint_selection_recall": 0.1,
+      "multi_topic_fp_rate": 0.7054263565891472,
+      "encoder_w_drift": 41.78430207871005,
+      "average_g_drift": 1.5842560992106924
+    },
+    "learnable_multi_g": {
+      "single_topic_top1_acc": 0.08,
+      "single_topic_group_recall": 0.8200000000000001,
+      "multi_topic_group_recall": 0.8695652173913043,
+      "multi_topic_joint_selection_recall": 0.75,
+      "multi_topic_fp_rate": 0.7673314339981007,
+      "encoder_w_drift": 41.79526017124937,
+      "average_g_drift": 1.700226811453879
+    },
+    "dynamic_multi_g": {
+      "single_topic_top1_acc": 0.16,
+      "single_topic_group_recall": 0.64,
+      "multi_topic_group_recall": 0.5652173913043479,
+      "multi_topic_joint_selection_recall": 0.3,
+      "multi_topic_fp_rate": 0.7632275132275133,
+      "encoder_w_drift": 41.771723807467595,
+      "average_g_drift": 1.6250350587880016
+    }
+  },
+  "sub_prototype_ablation": {
+    "1": {
+      "single_topic_top1_acc": 0.2,
+      "single_topic_group_recall": 0.48,
+      "multi_topic_group_recall": 0.30434782608695654,
+      "multi_topic_joint_selection_recall": 0.1,
+      "multi_topic_fp_rate": 0.8055555555555556
+    },
+    "2": {
+      "single_topic_top1_acc": 0.12,
+      "single_topic_group_recall": 0.72,
+      "multi_topic_group_recall": 0.8260869565217391,
+      "multi_topic_joint_selection_recall": 0.8,
+      "multi_topic_fp_rate": 0.7625
+    },
+    "3": {
+      "single_topic_top1_acc": 0.16,
+      "single_topic_group_recall": 0.96,
+      "multi_topic_group_recall": 1.0,
+      "multi_topic_joint_selection_recall": 1.0,
+      "multi_topic_fp_rate": 0.7653061224489796
+    },
+    "4": {
+      "single_topic_top1_acc": 0.16,
+      "single_topic_group_recall": 1.0,
+      "multi_topic_group_recall": 0.9565217391304348,
+      "multi_topic_joint_selection_recall": 0.9,
+      "multi_topic_fp_rate": 0.7634408602150538
+    },
+    "8": {
+      "single_topic_top1_acc": 0.12,
+      "single_topic_group_recall": 1.0,
+      "multi_topic_group_recall": 1.0,
+      "multi_topic_joint_selection_recall": 1.0,
+      "multi_topic_fp_rate": 0.77
+    }
+  },
+  "scalability": {
+    "1000": {
+      "total_blocks": 1000,
+      "full_scan_latency_ms": 1.702593750133019,
+      "learnable_g_latency_ms": 1.3220213000749936,
+      "p95_g_latency_ms": 1.4061984501950064,
+      "speedup": 1.2878716477839176,
+      "peak_ram_mb": 1.7658195495605469
+    },
+    "10000": {
+      "total_blocks": 10000,
+      "full_scan_latency_ms": 22.797113000069658,
+      "learnable_g_latency_ms": 5.232661999980337,
+      "p95_g_latency_ms": 5.404620149829499,
+      "speedup": 4.356695120027879,
+      "peak_ram_mb": 7.9222412109375
+    },
+    "100000": {
+      "total_blocks": 100000,
+      "full_scan_latency_ms": 263.0959474499832,
+      "learnable_g_latency_ms": 144.3900124501397,
+      "p95_g_latency_ms": 200.71511415039822,
+      "speedup": 1.822120124415355,
+      "peak_ram_mb": 69.5857162475586
+    }
+  }
+}

@@ -87,7 +87,8 @@ def test_learned_vs_random_representation_performance():
         rand_proto_scores = []
         for cat_idx in range(len(CATEGORIES)):
             # Random prototype representation
-            dummy_proto = random_enc.encode(fe.transform_dense(train_texts[cat_idx * 8]))
+            sample_idx = cat_idx % len(train_texts)
+            dummy_proto = random_enc.encode(fe.transform_dense(train_texts[sample_idx]))
             rand_proto_scores.append((cat_idx, (Q_rand.bits ^ dummy_proto.bits).bit_count()))
         rand_proto_scores.sort(key=lambda x: x[1])
         top_rand_cat = CATEGORIES[rand_proto_scores[0][0]]
