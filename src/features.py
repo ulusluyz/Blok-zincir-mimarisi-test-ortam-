@@ -1,7 +1,7 @@
 """
 Text Preprocessor and Feature Extraction for Turkish Text.
-Extracts char n-grams (3, 4, 5) and word n-grams (1, 2) to build a vocabulary and sparse feature vectors.
-Uses zero external transformer dependencies.
+Extracts char n-grams (2, 3, 4, 5) and word n-grams (1, 2) to build a vocabulary and sparse feature vectors.
+Uses sublinear TF scaling and L2 normalization without external dependencies.
 """
 
 import math
@@ -11,7 +11,6 @@ from typing import List, Dict, Set, Tuple
 
 def normalize_turkish(text: str) -> str:
     """Normalize Turkish characters to lowercase and strip punctuation."""
-    # First map Turkish specific uppercase characters to lowercase
     turkish_upper_map = {
         'İ': 'i', 'I': 'ı', 'Ş': 'ş', 'Ğ': 'ğ', 'Ü': 'ü', 'Ö': 'ö', 'Ç': 'ç'
     }
@@ -27,7 +26,7 @@ def normalize_turkish(text: str) -> str:
 
 
 def extract_ngrams(text: str) -> List[str]:
-    """Extract word n-grams (1-2) and character n-grams (3-5) from normalized text."""
+    """Extract word n-grams (1-2) and character n-grams (2-5) from normalized text."""
     norm_text = normalize_turkish(text)
     words = norm_text.split()
     features = []
@@ -38,9 +37,9 @@ def extract_ngrams(text: str) -> List[str]:
     for i in range(len(words) - 1):
         features.append(f"w2:{words[i]}_{words[i+1]}")
 
-    # Char n-grams (3, 4, 5)
+    # Char n-grams (2, 3, 4, 5)
     padded_text = f" {norm_text} "
-    for n in (3, 4, 5):
+    for n in (2, 3, 4, 5):
         for i in range(len(padded_text) - n + 1):
             gram = padded_text[i:i+n]
             features.append(f"c{n}:{gram}")
@@ -50,12 +49,12 @@ def extract_ngrams(text: str) -> List[str]:
 
 class FeatureExtractor:
     """
-    TF-IDF / Frequency based feature extractor for Turkish text.
-    Builds vocabulary from training corpus and maps text to fixed-size dense feature vectors.
+    Sublinear TF-IDF + L2 Normalized Feature Extractor for Turkish Text.
     """
 
-    def __init__(self, max_features: int = 1024):
+    def __init__(self, max_features: int = 1024, sublinear_tf: bool = True):
         self.max_features = max_features
+        self.sublinear_tf = sublinear_tf
         self.vocab: Dict[str, int] = {}
         self.idf: Dict[int, float] = {}
         self.is_fitted = False
@@ -73,7 +72,7 @@ class FeatureExtractor:
         sorted_grams = sorted(doc_freq.items(), key=lambda x: x[1], reverse=True)[:self.max_features]
         self.vocab = {gram: idx for idx, (gram, _) in enumerate(sorted_grams)}
 
-        # Compute IDF
+        # Compute Smooth IDF: log((N + 1) / (df + 1)) + 1
         for gram, idx in self.vocab.items():
             df = doc_freq[gram]
             self.idf[idx] = math.log((num_docs + 1) / (df + 1)) + 1.0
@@ -98,10 +97,12 @@ class FeatureExtractor:
                 idx = self.vocab[gram]
                 tf[idx] = tf.get(idx, 0) + 1
 
-        total_terms = len(grams)
-        # TF-IDF calculation
+        # Sublinear TF-IDF calculation
         for idx, count in tf.items():
-            tf_val = count / total_terms
+            if self.sublinear_tf:
+                tf_val = 1.0 + math.log(count)
+            else:
+                tf_val = count / len(grams)
             vector[idx] = tf_val * self.idf[idx]
 
         # L2 normalize

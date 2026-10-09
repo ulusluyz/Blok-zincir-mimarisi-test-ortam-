@@ -7,7 +7,7 @@ Comprehensive verification test suite covering:
 """
 
 import pytest
-from src.dataset import CATEGORIES, SMALL_TRAIN_DATA, SMALL_TEST_DATA
+from src.dataset import CATEGORIES, EXPANDED_TRAIN_DATA, SMALL_TEST_DATA
 from src.features import FeatureExtractor
 from src.encoder import RandomLSHEncoder, TrainableBinaryEncoder
 from src.blocks import AddressBlock, KnowledgeBlock, BlockNetwork
@@ -15,8 +15,8 @@ from src.blocks import AddressBlock, KnowledgeBlock, BlockNetwork
 
 @pytest.mark.parametrize("bit_length", [64, 128, 256])
 def test_end_to_end_pipeline_different_bit_lengths(bit_length):
-    train_texts = [text for text, _ in SMALL_TRAIN_DATA]
-    train_labels = [CATEGORIES.index(cat) for _, cat in SMALL_TRAIN_DATA]
+    train_texts = [text for text, _ in EXPANDED_TRAIN_DATA]
+    train_labels = [CATEGORIES.index(cat) for _, cat in EXPANDED_TRAIN_DATA]
 
     # 1. Extract Features
     fe = FeatureExtractor(max_features=256)
@@ -50,8 +50,8 @@ def test_end_to_end_pipeline_different_bit_lengths(bit_length):
 
 
 def test_learned_vs_random_representation_performance():
-    train_texts = [text for text, _ in SMALL_TRAIN_DATA]
-    train_labels = [CATEGORIES.index(cat) for _, cat in SMALL_TRAIN_DATA]
+    train_texts = [text for text, _ in EXPANDED_TRAIN_DATA]
+    train_labels = [CATEGORIES.index(cat) for _, cat in EXPANDED_TRAIN_DATA]
 
     fe = FeatureExtractor(max_features=256)
     fe.fit(train_texts)
@@ -59,7 +59,7 @@ def test_learned_vs_random_representation_performance():
 
     # Learned
     trainable_enc = TrainableBinaryEncoder(input_dim=256, bit_length=128, num_categories=len(CATEGORIES))
-    trainable_enc.fit(X_train, train_labels, epochs=20)
+    trainable_enc.fit(X_train, train_labels, epochs=25)
 
     # Random LSH
     random_enc = RandomLSHEncoder(input_dim=256, bit_length=128)

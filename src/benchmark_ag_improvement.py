@@ -3,11 +3,11 @@ Comprehensive Comparative Benchmark Framework for AG Learning Improvement.
 
 Measures:
 1. Mandatory Experiments A (Full Scan A), B (Oracle G), C (Learnable G Architectures).
-2. Comparison of 5 Training Strategies (A-Only, G-Only, Simultaneous Joint, Staged, Contrastive Margin Joint).
+2. Comparison of 5 Training Strategies (A-Only, G-Only, Simultaneous Joint, Staged 3-Phase, Contrastive Margin Joint).
 3. Ablation Study on Sub-Prototype Count (M in {1, 2, 3, 4, 8}).
 4. Scalability Benchmark across 1,000, 10,000, and 100,000 blocks.
 
-Outputs results to AG_LEARNING_RESULTS.json.
+Outputs results to AG_OPTIMIZATION_RESULTS.json.
 """
 
 import time
@@ -18,7 +18,7 @@ import json
 import numpy as np
 from typing import List, Dict, Tuple, Any
 
-from src.dataset import CATEGORIES, get_full_10cat_dataset
+from src.dataset import CATEGORIES, get_full_split_datasets
 from src.features import FeatureExtractor
 from src.bitwise import BinaryVector, similarity_xor_popcount
 from src.encoder import TrainableBinaryEncoder
@@ -34,39 +34,45 @@ from src.hierarchical_blocks import HierarchicalBlockNetwork
 
 
 def run_ag_improvement_benchmark(num_seeds: int = 2) -> Dict[str, Any]:
-    print("=== STARTING AG LEARNING IMPROVEMENT BENCHMARK SUITE ===")
+    print("=== STARTING AG LEARNING OPTIMIZATION BENCHMARK SUITE ===")
     results = {}
 
-    train_data, single_test_data, multi_test_data = get_full_10cat_dataset()
+    train_data, val_data, test_single_data, test_multi_data = get_full_split_datasets()
     train_texts = [text for text, _ in train_data]
 
-    fe = FeatureExtractor(max_features=256)
+    fe = FeatureExtractor(max_features=256, sublinear_tf=True)
     fe.fit(train_texts)
     X_train = [fe.transform_dense(t) for t in train_texts]
     y_train_categories = [[cat] for _, cat in train_data]
 
     # Helper function to evaluate network performance using the specific trained encoder
     def evaluate_network_with_encoder(h_net: HierarchicalBlockNetwork, encoder: TrainableBinaryEncoder) -> Dict[str, Any]:
-        # Pre-encode single and multi test queries with the SPECIFIC trained encoder
         single_encoded = []
-        for q_text, true_cat in single_test_data:
+        for item in test_single_data:
+            q_text = item["text"]
+            true_cat = item["category"]
+            acceptable_block_ids = item["acceptable_block_ids"]
             q_dense = fe.transform_dense(q_text)
             Q = encoder.encode(q_dense)
-            single_encoded.append((q_text, true_cat, Q))
+            single_encoded.append((q_text, true_cat, acceptable_block_ids, Q))
 
         multi_encoded = []
-        for q_text, expected_topics in multi_test_data:
+        for item in test_multi_data:
+            q_text = item["text"]
+            expected_topics = item["expected_categories"]
+            acceptable_block_ids = item["acceptable_block_ids"]
             q_dense = fe.transform_dense(q_text)
             Q = encoder.encode(q_dense)
-            multi_encoded.append((q_text, expected_topics, Q))
+            multi_encoded.append((q_text, expected_topics, acceptable_block_ids, Q))
 
         # Single-topic evaluation
-        st_top1_correct = 0
-        st_top3_correct = 0
+        st_top1_cat_correct = 0
+        st_top3_cat_correct = 0
+        st_block_id_correct = 0
         st_group_recalled = 0
         st_total = len(single_encoded)
 
-        for q_text, true_cat, Q in single_encoded:
+        for q_text, true_cat, acceptable_block_ids, Q in single_encoded:
             res = h_net.process_query_hierarchical_2level(
                 Q, method="xor", group_routing_strategy="dynamic_multi_label", confidence_margin=0.08, block_top_k=3
             )
@@ -75,11 +81,17 @@ def run_ag_improvement_benchmark(num_seeds: int = 2) -> Dict[str, Any]:
                 st_group_recalled += 1
 
             act_res = res["activated_results"]
+            if act_res:
+                win_block_id = act_res[0]["block_id"]
+                win_cat = act_res[0]["category"]
+                if win_cat == true_cat:
+                    st_top1_cat_correct += 1
+                if win_block_id in acceptable_block_ids:
+                    st_block_id_correct += 1
+
             ranked_cats = list(dict.fromkeys([cat for _, cat, _ in res["ranked_candidate_a_scores"]]))
-            if ranked_cats and ranked_cats[0] == true_cat:
-                st_top1_correct += 1
             if true_cat in ranked_cats[:3]:
-                st_top3_correct += 1
+                st_top3_cat_correct += 1
 
         # Multi-topic evaluation
         mt_expected_total = 0
@@ -88,7 +100,7 @@ def run_ag_improvement_benchmark(num_seeds: int = 2) -> Dict[str, Any]:
         mt_fp_count = 0
         mt_total_active = 0
 
-        for q_text, expected_topics, Q in multi_encoded:
+        for q_text, expected_topics, acceptable_block_ids, Q in multi_encoded:
             res = h_net.process_query_hierarchical_2level(
                 Q, method="xor", group_routing_strategy="dynamic_multi_label", confidence_margin=0.08
             )
@@ -105,8 +117,9 @@ def run_ag_improvement_benchmark(num_seeds: int = 2) -> Dict[str, Any]:
                 mt_joint_success_count += 1
 
         return {
-            "single_topic_top1_acc": st_top1_correct / max(1, st_total),
-            "single_topic_top3_acc": st_top3_correct / max(1, st_total),
+            "single_topic_top1_category_acc": st_top1_cat_correct / max(1, st_total),
+            "single_topic_top3_category_acc": st_top3_cat_correct / max(1, st_total),
+            "single_topic_block_id_acc": st_block_id_correct / max(1, st_total),
             "single_topic_group_recall": st_group_recalled / max(1, st_total),
             "multi_topic_group_recall": mt_found_total / max(1, mt_expected_total),
             "multi_topic_joint_selection_recall": mt_joint_success_count / max(1, len(multi_encoded)),
@@ -123,49 +136,88 @@ def run_ag_improvement_benchmark(num_seeds: int = 2) -> Dict[str, Any]:
         cat_samples = [text for text, c in train_data if c == cat_name]
         for s_i, sample_text in enumerate(cat_samples[:3]):
             vec = enc_base.encode(fe.transform_dense(sample_text))
-            ap = AddressBlock(f"ap_{cat_name}_{s_i}")
-            kb = KnowledgeBlock(f"kb_{cat_name}_{s_i}", cat_name, vec, ap)
+            block_id = f"kb_{cat_name}_{s_i}"
+            ap = AddressBlock(f"ap_{cat_name}_{s_i}", payload={"sample": sample_text, "block_id": block_id})
+            kb = KnowledgeBlock(block_id, cat_name, vec, ap)
             all_real_blocks.append(kb)
 
     flat_net = BlockNetwork(all_real_blocks)
 
     # Pre-encode single test queries for base encoder
-    base_single_test = []
-    for q_text, true_cat in single_test_data:
-        q_dense = fe.transform_dense(q_text)
-        Q = enc_base.encode(q_dense)
-        base_single_test.append((q_text, true_cat, Q))
+    st_total = len(test_single_data)
 
     # Experiment A: Full Scan A
-    exp_a_top1, exp_a_top3 = 0, 0
-    exp_a_num = len(base_single_test)
-    for q_text, true_cat, Q in base_single_test:
+    exp_a_cat_top1, exp_a_cat_top3, exp_a_block_top1 = 0, 0, 0
+    exp_a_lats = []
+    for item in test_single_data:
+        q_text = item["text"]
+        true_cat = item["category"]
+        acceptable_block_ids = item["acceptable_block_ids"]
+
+        t0 = time.perf_counter()
+        q_dense = fe.transform_dense(q_text)
+        Q = enc_base.encode(q_dense)
         res = flat_net.process_query(Q, method="xor", top_k=3)
+        t1 = time.perf_counter()
+
+        exp_a_lats.append((t1 - t0) * 1000.0)
+        act_res = res["activated_results"]
+        if act_res:
+            win_block_id = act_res[0]["block_id"]
+            win_cat = act_res[0]["category"]
+            if win_cat == true_cat:
+                exp_a_cat_top1 += 1
+            if win_block_id in acceptable_block_ids:
+                exp_a_block_top1 += 1
+
         ranked_cats = list(dict.fromkeys([cat for _, cat, _ in res["ranked_all_scores"]]))
-        if ranked_cats and ranked_cats[0] == true_cat:
-            exp_a_top1 += 1
         if true_cat in ranked_cats[:3]:
-            exp_a_top3 += 1
+            exp_a_cat_top3 += 1
 
     results["experiment_a_full_scan"] = {
-        "top1_acc": exp_a_top1 / exp_a_num,
-        "top3_acc": exp_a_top3 / exp_a_num
+        "top1_acc": exp_a_cat_top1 / st_total,
+        "top3_acc": exp_a_cat_top3 / st_total,
+        "single_topic_top1_category_acc": exp_a_cat_top1 / st_total,
+        "single_topic_top3_category_acc": exp_a_cat_top3 / st_total,
+        "single_topic_block_id_acc": exp_a_block_top1 / st_total,
+        "avg_latency_ms": float(np.mean(exp_a_lats))
     }
 
     # Experiment B: Oracle G
-    exp_b_top1, exp_b_top3 = 0, 0
-    for q_text, true_cat, Q in base_single_test:
+    exp_b_cat_top1, exp_b_cat_top3, exp_b_block_top1 = 0, 0, 0
+    exp_b_lats = []
+    for item in test_single_data:
+        q_text = item["text"]
+        true_cat = item["category"]
+        acceptable_block_ids = item["acceptable_block_ids"]
+
+        t0 = time.perf_counter()
+        q_dense = fe.transform_dense(q_text)
+        Q = enc_base.encode(q_dense)
+
         oracle_blocks = [b for b in all_real_blocks if b.category == true_cat]
-        scores = [(b.category, similarity_xor_popcount(b.representation, Q)) for b in oracle_blocks]
+        scores = [(b, similarity_xor_popcount(b.representation, Q)) for b in oracle_blocks]
         scores.sort(key=lambda x: x[1], reverse=True)
-        if scores and scores[0][0] == true_cat:
-            exp_b_top1 += 1
-        if true_cat in [s[0] for s in scores[:3]]:
-            exp_b_top3 += 1
+        t1 = time.perf_counter()
+
+        exp_b_lats.append((t1 - t0) * 1000.0)
+        if scores:
+            win_block_id = scores[0][0].block_id
+            win_cat = scores[0][0].category
+            if win_cat == true_cat:
+                exp_b_cat_top1 += 1
+            if win_block_id in acceptable_block_ids:
+                exp_b_block_top1 += 1
+
+        ranked_cats = list(dict.fromkeys([b.category for b, _ in scores]))
+        if true_cat in ranked_cats[:3]:
+            exp_b_cat_top3 += 1
 
     results["experiment_b_oracle_g"] = {
-        "top1_acc": exp_b_top1 / exp_a_num,
-        "top3_acc": exp_b_top3 / exp_a_num
+        "single_topic_top1_category_acc": exp_b_cat_top1 / st_total,
+        "single_topic_top3_category_acc": exp_b_cat_top3 / st_total,
+        "single_topic_block_id_acc": exp_b_block_top1 / st_total,
+        "avg_latency_ms": float(np.mean(exp_b_lats))
     }
 
     # Experiment C: 4 G Architectures
@@ -196,17 +248,17 @@ def run_ag_improvement_benchmark(num_seeds: int = 2) -> Dict[str, Any]:
             cat_samples = [text for text, c in train_data if c == cat_name]
             for s_i, sample_text in enumerate(cat_samples[:3]):
                 vec = enc_arch.encode(fe.transform_dense(sample_text))
-                ap = AddressBlock(f"ap_{cat_name}_{s_i}")
-                kb = KnowledgeBlock(f"kb_{cat_name}_{s_i}", cat_name, vec, ap)
+                block_id = f"kb_{cat_name}_{s_i}"
+                ap = AddressBlock(f"ap_{cat_name}_{s_i}", payload={"sample": sample_text, "block_id": block_id})
+                kb = KnowledgeBlock(block_id, cat_name, vec, ap)
                 g_reps[cat_name].add_member_a_block(kb)
                 arch_blocks.append(kb)
 
         trainer = JointAGTrainer(enc_arch, g_reps)
-        trainer.fit_joint(X_train, y_train_categories, CATEGORIES, epochs=15, lr=0.05)
+        trainer.fit_strategy(X_train, y_train_categories, CATEGORIES, strategy="staged", epochs=15, lr=0.05)
 
-        # Re-encode KnowledgeBlocks with trained encoder
         for kb in arch_blocks:
-            sample_text = kb.address_block._payload.get("sample", "") if hasattr(kb.address_block, "_payload") else ""
+            sample_text = kb.address_block._payload.get("sample", "")
             if sample_text:
                 kb.representation = enc_arch.encode(fe.transform_dense(sample_text))
 
@@ -231,15 +283,15 @@ def run_ag_improvement_benchmark(num_seeds: int = 2) -> Dict[str, Any]:
             cat_samples = [text for text, c in train_data if c == cat_name]
             for s_i, sample_text in enumerate(cat_samples[:3]):
                 vec = enc_strat.encode(fe.transform_dense(sample_text))
-                ap = AddressBlock(f"ap_{cat_name}_{s_i}", payload={"sample": sample_text})
-                kb = KnowledgeBlock(f"kb_{cat_name}_{s_i}", cat_name, vec, ap)
+                block_id = f"kb_{cat_name}_{s_i}"
+                ap = AddressBlock(f"ap_{cat_name}_{s_i}", payload={"sample": sample_text, "block_id": block_id})
+                kb = KnowledgeBlock(block_id, cat_name, vec, ap)
                 g_reps_strat[cat_name].add_member_a_block(kb)
                 strat_blocks.append(kb)
 
         trainer_strat = JointAGTrainer(enc_strat, g_reps_strat)
         fit_res = trainer_strat.fit_strategy(X_train, y_train_categories, CATEGORIES, strategy=strat, epochs=15, lr=0.05)
 
-        # Re-encode KnowledgeBlocks with the SPECIFIC trained encoder enc_strat
         for kb in strat_blocks:
             sample_text = kb.address_block._payload.get("sample", "")
             if sample_text:
@@ -247,12 +299,13 @@ def run_ag_improvement_benchmark(num_seeds: int = 2) -> Dict[str, Any]:
 
         h_net_strat = HierarchicalBlockNetwork(list(g_reps_strat.values()))
         h_net_strat.register_flat_blocks(strat_blocks)
-        eval_metrics = evaluate_network_with_encoder(h_net_strat, enc_strat)
 
+        eval_metrics = evaluate_network_with_encoder(h_net_strat, enc_strat)
         strategy_results[strat] = {
             **eval_metrics,
             "encoder_w_drift": fit_res["encoder_w_drift_norm"],
-            "average_g_drift": fit_res["average_g_drift"]
+            "average_g_drift": fit_res["average_g_drift"],
+            "rollback_triggered": fit_res.get("rollback_triggered", False)
         }
 
     results["training_strategies_comparison"] = strategy_results
@@ -270,8 +323,9 @@ def run_ag_improvement_benchmark(num_seeds: int = 2) -> Dict[str, Any]:
             cat_samples = [text for text, c in train_data if c == cat_name]
             for s_i, sample_text in enumerate(cat_samples[:3]):
                 vec = enc_m.encode(fe.transform_dense(sample_text))
-                ap = AddressBlock(f"ap_{cat_name}_{s_i}", payload={"sample": sample_text})
-                kb = KnowledgeBlock(f"kb_{cat_name}_{s_i}", cat_name, vec, ap)
+                block_id = f"kb_{cat_name}_{s_i}"
+                ap = AddressBlock(f"ap_{cat_name}_{s_i}", payload={"sample": sample_text, "block_id": block_id})
+                kb = KnowledgeBlock(block_id, cat_name, vec, ap)
                 g_reps_m[cat_name].add_member_a_block(kb)
                 m_blocks.append(kb)
 
@@ -319,9 +373,13 @@ def run_ag_improvement_benchmark(num_seeds: int = 2) -> Dict[str, Any]:
         tracemalloc.stop()
 
         full_lats, g_lats = [], []
-        test_samples = base_single_test[:20]
+        test_samples = test_single_data[:20]
 
-        for q_text, true_cat, Q in test_samples:
+        for item in test_samples:
+            q_text = item["text"]
+            q_dense = fe.transform_dense(q_text)
+            Q = enc_scale.encode(q_dense)
+
             t0 = time.perf_counter()
             res_full = flat_net_scale.process_query(Q, method="xor", top_k=1)
             t1 = time.perf_counter()
@@ -350,11 +408,11 @@ def run_ag_improvement_benchmark(num_seeds: int = 2) -> Dict[str, Any]:
 
     results["scalability"] = scale_results
 
-    # Save to AG_LEARNING_RESULTS.json
-    with open("AG_LEARNING_RESULTS.json", "w", encoding="utf-8") as f:
+    # Save to AG_OPTIMIZATION_RESULTS.json
+    with open("AG_OPTIMIZATION_RESULTS.json", "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
 
-    print("\nSaved benchmark results to AG_LEARNING_RESULTS.json!")
+    print("\nSaved benchmark results to AG_OPTIMIZATION_RESULTS.json!")
     return results
 
 
