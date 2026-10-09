@@ -1,0 +1,17 @@
+================================================================================
+AG LEARNING IMPROVEMENT & CO-OPTIMIZATION BENCHMARK EXECUTION LOG
+================================================================================
+Timestamp: 2026-10-09 22:08:16 UTC
+
+=== STARTING AG LEARNING IMPROVEMENT BENCHMARK SUITE ===
+
+--- 2. Benchmarking 5 Training Strategies ---
+
+--- 3. Sub-prototype Ablation Study (M = 1, 2, 3, 4, 8) ---
+
+--- 4. Scalability Benchmark across 1,000, 10,000, 100,000 blocks ---
+  Scale   1000 blocks -> Full:    1.897 ms | Learnable G:    1.523 ms (Speedup:   1.2x) | Peak RAM:   1.77 MB
+  Scale  10000 blocks -> Full:   21.335 ms | Learnable G:    4.980 ms (Speedup:   4.3x) | Peak RAM:   7.92 MB
+  Scale 100000 blocks -> Full:  306.481 ms | Learnable G:  160.317 ms (Speedup:   1.9x) | Peak RAM:  69.59 MB
+
+Saved benchmark results to AG_LEARNING_RESULTS.json!

@@ -1,5 +1,5 @@
 """
-Unit tests for Learnable G Representatives and Joint A/G Training.
+Unit tests for Learnable G Representatives and Joint A/G Training Strategies.
 """
 
 import pytest
@@ -22,7 +22,6 @@ def test_learnable_single_g_representative():
     s0 = g.evaluate_suitability(Q)
     assert 0.0 <= s0 <= 1.0
 
-    # Gradient update
     q_bools = Q.to_bool_list()
     g.update_gradients(q_bools, is_target=True, lr=0.1)
 
@@ -45,15 +44,15 @@ def test_dynamic_multi_prototype_g_representative():
     g = DynamicMultiPrototypeGRepresentative("g1", "Elektronik", bit_length=64, max_sub_prototypes=4)
     assert len(g.sub_prototypes) == 1
 
-    # Simulate errors to trigger split
     g.sub_errors[0] = 5.0
     g.adapt_topology(split_error_threshold=2.0)
-
-    # Topology should have split into 2 sub-prototypes
     assert len(g.sub_prototypes) == 2
 
 
-def test_joint_ag_trainer_and_weight_drifts():
+@pytest.mark.parametrize("strategy", [
+    "a_only", "g_only", "simultaneous_joint", "staged", "contrastive_joint"
+])
+def test_five_training_strategies(strategy):
     texts = ["merhaba selam", "dünya güneş gezegen", "bc337 transistör devre", "12 çarpı 8"]
     labels = [["Selamlaşma"], ["Gezegenler"], ["Elektronik"], ["Matematik"]]
     all_cats = ["Selamlaşma", "Gezegenler", "Elektronik", "Matematik"]
@@ -72,8 +71,15 @@ def test_joint_ag_trainer_and_weight_drifts():
     }
 
     trainer = JointAGTrainer(encoder, g_reps)
-    res = trainer.fit_joint(X, labels, all_cats, epochs=10, lr=0.05)
+    res = trainer.fit_strategy(X, labels, all_cats, strategy=strategy, epochs=6, lr=0.05)
 
-    # Verify that BOTH W (A kernels) and G prototypes experienced weight drift > 0 (proving true joint learning)
-    assert res["encoder_w_drift_norm"] > 0.0
-    assert res["average_g_drift"] > 0.0
+    assert res["strategy"] == strategy
+    if strategy == "a_only":
+        assert res["encoder_w_drift_norm"] > 0.0
+        assert res["average_g_drift"] == 0.0
+    elif strategy == "g_only":
+        assert res["encoder_w_drift_norm"] == 0.0
+        assert res["average_g_drift"] > 0.0
+    else:
+        assert res["encoder_w_drift_norm"] > 0.0
+        assert res["average_g_drift"] > 0.0

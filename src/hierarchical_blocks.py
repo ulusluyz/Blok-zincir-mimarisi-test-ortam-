@@ -37,11 +37,12 @@ class HierarchicalBlockNetwork:
         self,
         Q: BinaryVector,
         method: str = "xor",
-        group_routing_strategy: str = "confidence_margin",  # "top_k", "threshold", "confidence_margin", "dynamic_multi_label"
+        group_routing_strategy: str = "dynamic_multi_label",  # "top_k", "threshold", "confidence_margin", "dynamic_multi_label"
         group_top_k: int = 2,
         group_threshold: float = 0.50,
         confidence_margin: float = 0.08,
         min_group_confidence: float = 0.40,
+        max_active_groups: int = 3,
         block_top_k: int = 1,
         sim_func: Optional[Callable[[BinaryVector, BinaryVector], float]] = None
     ) -> Dict[str, Any]:
@@ -80,15 +81,16 @@ class HierarchicalBlockNetwork:
                 fallback_reason = "No group met threshold"
 
         elif group_routing_strategy == "dynamic_multi_label":
-            # Multi-label activation: Top-1 group AND any group within relative margin
+            # Calibrated Multi-label activation: Top-1 group AND any group within relative margin up to max_active_groups
             if not g_scores:
                 active_groups = []
             else:
                 top1_score = g_scores[0][1]
-                active_groups = [
-                    item for item in g_scores
-                    if (top1_score - item[1]) <= confidence_margin or item[1] >= group_threshold
-                ]
+                cutoff = max(top1_score - confidence_margin, group_threshold)
+                candidates = [item for item in g_scores if item[1] >= cutoff]
+                active_groups = candidates[:max_active_groups]
+                if not active_groups:
+                    active_groups = g_scores[:1]
 
         elif group_routing_strategy == "confidence_margin":
             if not g_scores:

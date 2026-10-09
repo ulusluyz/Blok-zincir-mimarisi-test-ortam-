@@ -1,0 +1,164 @@
+{
+  "experiment_a_full_scan": {
+    "top1_acc": 0.44,
+    "top3_acc": 0.68
+  },
+  "experiment_b_oracle_g": {
+    "top1_acc": 1.0,
+    "top3_acc": 1.0
+  },
+  "experiment_c_learnable_g": {
+    "static_g": {
+      "single_topic_top1_acc": 0.44,
+      "single_topic_top3_acc": 0.52,
+      "single_topic_group_recall": 0.52,
+      "multi_topic_group_recall": 0.34782608695652173,
+      "multi_topic_joint_selection_recall": 0.0,
+      "multi_topic_fp_rate": 0.4666666666666667
+    },
+    "learnable_single_g": {
+      "single_topic_top1_acc": 0.28,
+      "single_topic_top3_acc": 0.56,
+      "single_topic_group_recall": 0.56,
+      "multi_topic_group_recall": 0.5217391304347826,
+      "multi_topic_joint_selection_recall": 0.1,
+      "multi_topic_fp_rate": 0.45454545454545453
+    },
+    "learnable_multi_g": {
+      "single_topic_top1_acc": 0.44,
+      "single_topic_top3_acc": 0.44,
+      "single_topic_group_recall": 0.44,
+      "multi_topic_group_recall": 0.5652173913043478,
+      "multi_topic_joint_selection_recall": 0.2,
+      "multi_topic_fp_rate": 0.43478260869565216
+    },
+    "dynamic_multi_g": {
+      "single_topic_top1_acc": 0.2,
+      "single_topic_top3_acc": 0.44,
+      "single_topic_group_recall": 0.44,
+      "multi_topic_group_recall": 0.5652173913043478,
+      "multi_topic_joint_selection_recall": 0.1,
+      "multi_topic_fp_rate": 0.4090909090909091
+    }
+  },
+  "training_strategies_comparison": {
+    "a_only": {
+      "single_topic_top1_acc": 0.36,
+      "single_topic_top3_acc": 0.36,
+      "single_topic_group_recall": 0.36,
+      "multi_topic_group_recall": 0.17391304347826086,
+      "multi_topic_joint_selection_recall": 0.0,
+      "multi_topic_fp_rate": 0.8571428571428571,
+      "encoder_w_drift": 55.31510176786054,
+      "average_g_drift": 0.0
+    },
+    "g_only": {
+      "single_topic_top1_acc": 0.32,
+      "single_topic_top3_acc": 0.48,
+      "single_topic_group_recall": 0.48,
+      "multi_topic_group_recall": 0.34782608695652173,
+      "multi_topic_joint_selection_recall": 0.0,
+      "multi_topic_fp_rate": 0.7142857142857143,
+      "encoder_w_drift": 0.0,
+      "average_g_drift": 1.5396372945055883
+    },
+    "simultaneous_joint": {
+      "single_topic_top1_acc": 0.4,
+      "single_topic_top3_acc": 0.56,
+      "single_topic_group_recall": 0.56,
+      "multi_topic_group_recall": 0.4782608695652174,
+      "multi_topic_joint_selection_recall": 0.1,
+      "multi_topic_fp_rate": 0.3888888888888889,
+      "encoder_w_drift": 55.30758797626586,
+      "average_g_drift": 1.6674799752853164
+    },
+    "staged": {
+      "single_topic_top1_acc": 0.44,
+      "single_topic_top3_acc": 0.6,
+      "single_topic_group_recall": 0.6,
+      "multi_topic_group_recall": 0.4782608695652174,
+      "multi_topic_joint_selection_recall": 0.1,
+      "multi_topic_fp_rate": 0.5217391304347826,
+      "encoder_w_drift": 35.10169434974314,
+      "average_g_drift": 1.464280807303013
+    },
+    "contrastive_joint": {
+      "single_topic_top1_acc": 0.32,
+      "single_topic_top3_acc": 0.4,
+      "single_topic_group_recall": 0.4,
+      "multi_topic_group_recall": 0.2608695652173913,
+      "multi_topic_joint_selection_recall": 0.0,
+      "multi_topic_fp_rate": 0.6842105263157895,
+      "encoder_w_drift": 47.324136050793896,
+      "average_g_drift": 1.307902784661169
+    }
+  },
+  "sub_prototype_ablation": {
+    "1": {
+      "single_topic_top1_acc": 0.44,
+      "single_topic_top3_acc": 0.52,
+      "single_topic_group_recall": 0.52,
+      "multi_topic_group_recall": 0.34782608695652173,
+      "multi_topic_joint_selection_recall": 0.0,
+      "multi_topic_fp_rate": 0.6190476190476191
+    },
+    "2": {
+      "single_topic_top1_acc": 0.32,
+      "single_topic_top3_acc": 0.44,
+      "single_topic_group_recall": 0.44,
+      "multi_topic_group_recall": 0.34782608695652173,
+      "multi_topic_joint_selection_recall": 0.0,
+      "multi_topic_fp_rate": 0.6
+    },
+    "3": {
+      "single_topic_top1_acc": 0.44,
+      "single_topic_top3_acc": 0.52,
+      "single_topic_group_recall": 0.52,
+      "multi_topic_group_recall": 0.43478260869565216,
+      "multi_topic_joint_selection_recall": 0.1,
+      "multi_topic_fp_rate": 0.5238095238095238
+    },
+    "4": {
+      "single_topic_top1_acc": 0.48,
+      "single_topic_top3_acc": 0.48,
+      "single_topic_group_recall": 0.48,
+      "multi_topic_group_recall": 0.43478260869565216,
+      "multi_topic_joint_selection_recall": 0.1,
+      "multi_topic_fp_rate": 0.5833333333333334
+    },
+    "8": {
+      "single_topic_top1_acc": 0.24,
+      "single_topic_top3_acc": 0.24,
+      "single_topic_group_recall": 0.24,
+      "multi_topic_group_recall": 0.30434782608695654,
+      "multi_topic_joint_selection_recall": 0.0,
+      "multi_topic_fp_rate": 0.7407407407407407
+    }
+  },
+  "scalability": {
+    "1000": {
+      "total_blocks": 1000,
+      "full_scan_latency_ms": 1.896792849765916,
+      "learnable_g_latency_ms": 1.5232288998049626,
+      "p95_g_latency_ms": 1.631232849922526,
+      "speedup": 1.2452447888881213,
+      "peak_ram_mb": 1.7658805847167969
+    },
+    "10000": {
+      "total_blocks": 10000,
+      "full_scan_latency_ms": 21.335439450012927,
+      "learnable_g_latency_ms": 4.979575900233613,
+      "p95_g_latency_ms": 5.127883449586079,
+      "speedup": 4.284589667367454,
+      "peak_ram_mb": 7.9224700927734375
+    },
+    "100000": {
+      "total_blocks": 100000,
+      "full_scan_latency_ms": 306.48058360002324,
+      "learnable_g_latency_ms": 160.31693914983407,
+      "p95_g_latency_ms": 253.82653240067157,
+      "speedup": 1.9117167856703086,
+      "peak_ram_mb": 69.58568572998047
+    }
+  }
+}
