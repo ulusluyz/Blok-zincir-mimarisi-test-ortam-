@@ -1,0 +1,74 @@
+{
+  "experiment_a_full_scan": {
+    "top1_accuracy": 0.44,
+    "top1_numerator": 11,
+    "top1_denominator": 25,
+    "top3_accuracy": 0.6,
+    "top3_numerator": 15,
+    "top3_denominator": 25,
+    "avg_rank_of_correct_block": 4.92,
+    "avg_latency_ms": 12.459687880073034,
+    "total_a_evaluated": 30
+  },
+  "experiment_b_oracle_g": {
+    "top1_accuracy": 1.0,
+    "top1_numerator": 25,
+    "top1_denominator": 25,
+    "top3_accuracy": 1.0,
+    "top3_numerator": 25,
+    "top3_denominator": 25,
+    "avg_rank_of_correct_block": 1.0,
+    "avg_latency_ms": 0.0029224400350358337,
+    "avg_a_evaluated": 3.0
+  },
+  "experiment_c_learnable_g": {
+    "static_g": {
+      "single_topic_top1_accuracy": 0.44,
+      "single_topic_top1_numerator": 11,
+      "single_topic_top1_denominator": 25,
+      "single_topic_top3_accuracy": 0.56,
+      "single_topic_group_recall": 0.96,
+      "multi_topic_group_recall": 0.9130434782608695,
+      "multi_topic_joint_selection_recall": 0.8,
+      "multi_topic_precision": 0.23076923076923078,
+      "multi_topic_fp_rate": 0.7692307692307693,
+      "avg_latency_ms": 2.079028160114831
+    },
+    "learnable_single_g": {
+      "single_topic_top1_accuracy": 0.32,
+      "single_topic_top1_numerator": 8,
+      "single_topic_top1_denominator": 25,
+      "single_topic_top3_accuracy": 0.4,
+      "single_topic_group_recall": 0.52,
+      "multi_topic_group_recall": 0.43478260869565216,
+      "multi_topic_joint_selection_recall": 0.0,
+      "multi_topic_precision": 0.5555555555555556,
+      "multi_topic_fp_rate": 0.4444444444444444,
+      "avg_latency_ms": 2.3170278800898814
+    },
+    "learnable_multi_g": {
+      "single_topic_top1_accuracy": 0.4,
+      "single_topic_top1_numerator": 10,
+      "single_topic_top1_denominator": 25,
+      "single_topic_top3_accuracy": 0.6,
+      "single_topic_group_recall": 0.8,
+      "multi_topic_group_recall": 0.6521739130434783,
+      "multi_topic_joint_selection_recall": 0.4,
+      "multi_topic_precision": 0.2830188679245283,
+      "multi_topic_fp_rate": 0.7169811320754716,
+      "avg_latency_ms": 2.980662959962501
+    },
+    "dynamic_multi_g": {
+      "single_topic_top1_accuracy": 0.48,
+      "single_topic_top1_numerator": 12,
+      "single_topic_top1_denominator": 25,
+      "single_topic_top3_accuracy": 0.52,
+      "single_topic_group_recall": 0.56,
+      "multi_topic_group_recall": 0.391304347826087,
+      "multi_topic_joint_selection_recall": 0.1,
+      "multi_topic_precision": 0.2903225806451613,
+      "multi_topic_fp_rate": 0.7096774193548387,
+      "avg_latency_ms": 3.400876600026095
+    }
+  }
+}

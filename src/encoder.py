@@ -45,7 +45,7 @@ class TrainableBinaryEncoder:
     such that queries from category C map to binary representations close to category C's target prototype in Hamming space.
     """
 
-    def __init__(self, input_dim: int, bit_length: int = 128, num_categories: int = 6, seed: int = 42):
+    def __init__(self, input_dim: int, bit_length: int = 128, num_categories: int = 10, seed: int = 42):
         self.input_dim = input_dim
         self.bit_length = bit_length
         self.num_categories = num_categories
@@ -57,16 +57,11 @@ class TrainableBinaryEncoder:
             for _ in range(bit_length)
         ]
 
-        # Learnable or fixed distinct target prototypes for each category class in N-bit space
-        # Initialize category target bit patterns with maximal dispersion / Hadamard-like separation
+        # Initialize distinct, orthogonally dispersed target prototypes for each category class in N-bit space
         self.category_prototypes: Dict[int, BinaryVector] = {}
         for cat_idx in range(num_categories):
-            # Create distinct binary pattern for each category
-            proto_bits = []
-            for b in range(bit_length):
-                # Deterministic distinct pattern generator
-                val = ((b + cat_idx * 37) % 7) > 3
-                proto_bits.append(val)
+            cat_rng = random.Random(seed + cat_idx * 1000 + 7)
+            proto_bits = [cat_rng.choice([True, False]) for _ in range(bit_length)]
             self.category_prototypes[cat_idx] = BinaryVector.from_bool_list(proto_bits)
 
     def encode(self, dense_vector: List[float]) -> BinaryVector:

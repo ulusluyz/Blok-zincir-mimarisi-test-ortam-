@@ -1,0 +1,114 @@
+================================================================================
+RAW EXECUTION LOG - G ARCHITECTURE DIAGNOSTIC AUDIT
+================================================================================
+Timestamp: 2026-10-09 21:35:33 UTC
+
+--- 1. AUDITING SPARSE ACTIVATION & METHOD INVOCATION COUNTERS ---
+=== AUDITING 100,000 SCALED NETWORK COUNTERS ===
+Query 1 ('Dünya hangi yıldızın etrafında döner?') [Strategy: Top-1 Group]:
+  Network Total G Groups: 10
+  Network Total A Blocks: 100000
+  Real G Evaluated Count: 10
+  Real A Evaluated Count: 10000 (Elenen / Değerlendirilmeyen: 90000)
+  Real A+ Read Count     : 1
+  Unselected G Member A Method Invocations: 0
+
+Query 2 ('Transistörün sıcaklıkla değişen davranışını matematiksel türevle açıkla') [Strategy: Margin Fallback]:
+  Fallback Triggered    : True (Close margin (0.008 < 0.080))
+  Active G Groups Count : 3
+  Real G Evaluated Count: 10
+  Real A Evaluated Count: 30000 (Elenen / Değerlendirilmeyen: 70000)
+  Real A+ Read Count     : 1
+
+--- 2. AUDITING MULTI-TOPIC RECALL DETAILS ---
+=== SINGLE-TOPIC GROUP RECALL AUDIT ===
+Single-Topic Group Recall: 44.00% (11/25)
+
+=== MULTI-TOPIC GROUP RECALL AUDIT ===
+Query 1: 'Transistörün sıcaklıkla değişen davranışını termodinamik ve türevle açıkla'
+  Expected Topics : ['Elektronik', 'Fizik', 'Matematik']
+  Top-1 Selected  : ['Gezegenler'] -> Found 0/3
+  Flex Selected   : ['Gezegenler']
+  Missing Topics  : ['Elektronik', 'Fizik', 'Matematik']
+  False Positives : ['Gezegenler']
+
+Query 2: 'Mars yüzeyindeki uzay araçlarının elektronik çip ve yörünge mekaniği'
+  Expected Topics : ['Gezegenler', 'Elektronik', 'Fizik']
+  Top-1 Selected  : ['Fizik'] -> Found 1/3
+  Flex Selected   : ['Fizik']
+  Missing Topics  : ['Gezegenler', 'Elektronik']
+  False Positives : []
+
+Query 3: 'Yunusların sonar sistemi ve biyonik devre çip entegrasyonu'
+  Expected Topics : ['Hayvanlar', 'Biyoloji', 'Elektronik']
+  Top-1 Selected  : ['Gezegenler'] -> Found 0/3
+  Flex Selected   : ['Gezegenler', 'Fizik']
+  Missing Topics  : ['Hayvanlar', 'Biyoloji', 'Elektronik']
+  False Positives : ['Gezegenler', 'Fizik']
+
+Query 4: 'Osmanlı dönemindeki divan edebiyatı ve edebi eserlerin tarihi incelemesi'
+  Expected Topics : ['Tarih', 'Edebiyat']
+  Top-1 Selected  : ['Edebiyat'] -> Found 1/2
+  Flex Selected   : ['Edebiyat']
+  Missing Topics  : ['Tarih']
+  False Positives : []
+
+Query 5: 'Hücre zarındaki fotosentez enerjisinin kuantum fiziğiyle modellenmesi'
+  Expected Topics : ['Biyoloji', 'Fizik']
+  Top-1 Selected  : ['Biyoloji'] -> Found 1/2
+  Flex Selected   : ['Biyoloji', 'Fizik', 'Matematik']
+  Missing Topics  : []
+  False Positives : ['Matematik']
+
+Query 6: 'Köpeklerin genetik haritası ve biyolojik kalıtım hesabı'
+  Expected Topics : ['Hayvanlar', 'Biyoloji']
+  Top-1 Selected  : ['Matematik'] -> Found 0/2
+  Flex Selected   : ['Matematik', 'Biyoloji']
+  Missing Topics  : ['Hayvanlar']
+  False Positives : ['Matematik']
+
+Query 7: 'Güneş sistemindeki gezegen yörüngelerinin türev ve integral hesabı'
+  Expected Topics : ['Gezegenler', 'Matematik']
+  Top-1 Selected  : ['Gezegenler'] -> Found 1/2
+  Flex Selected   : ['Gezegenler']
+  Missing Topics  : ['Matematik']
+  False Positives : []
+
+Query 8: 'Elektrik devresindeki direnç ısınmasının termodinamik fiziği'
+  Expected Topics : ['Elektronik', 'Fizik']
+  Top-1 Selected  : ['Elektronik'] -> Found 1/2
+  Flex Selected   : ['Elektronik']
+  Missing Topics  : ['Fizik']
+  False Positives : []
+
+Query 9: 'Milli mücadele dönemi şiirleri ve edebi metinlerin tarihi değeri'
+  Expected Topics : ['Edebiyat', 'Tarih']
+  Top-1 Selected  : ['Edebiyat'] -> Found 1/2
+  Flex Selected   : ['Edebiyat']
+  Missing Topics  : ['Tarih']
+  False Positives : []
+
+Query 10: 'Yapay zeka mikrodenetleyici çiplerinde matris ve diferansiyel denklemler'
+  Expected Topics : ['Elektronik', 'Matematik']
+  Top-1 Selected  : ['Biyoloji'] -> Found 0/2
+  Flex Selected   : ['Biyoloji']
+  Missing Topics  : ['Elektronik', 'Matematik']
+  False Positives : ['Biyoloji']
+
+=== SUMMARY METRICS ===
+Multi-Topic Recall (Before Fallback - Top-1 Only): 26.09%
+Multi-Topic Recall (After Fallback - Flex Margin): 34.78%
+Joint Selection Success Rate (All Topics Found): 10.00%
+Total Missing Expected Topics: 15
+False Positive Group Activation Rate: 42.86%
+
+--- 3. RUNNING MANDATORY DIAGNOSTIC EXPERIMENTS A, B, C ---
+=== STARTING MANDATORY DIAGNOSTIC EXPERIMENTS (A, B, C) ===
+
+--- Running Experiment A: Full Scan A (No G Routing) ---
+
+--- Running Experiment B: Oracle G (Ground-Truth Routing) ---
+
+--- Running Experiment C: Learnable G Routing Across 4 Architectures ---
+
+Saved diagnostic findings to G_DIAGNOSTIC_RESULTS.json!

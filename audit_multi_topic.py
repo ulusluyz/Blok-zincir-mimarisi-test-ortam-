@@ -2,7 +2,7 @@
 Detailed Multi-Topic & Single-Topic Recall Audit Script.
 """
 
-from src.dataset import CATEGORIES, SMALL_TRAIN_DATA, SMALL_TEST_DATA, MULTI_TOPIC_TEST_DATA, get_expanded_dataset
+from src.dataset import CATEGORIES, SMALL_TRAIN_DATA, SMALL_TEST_DATA, MULTI_TOPIC_TEST_DATASET, get_expanded_dataset
 from src.features import FeatureExtractor
 from src.bitwise import BinaryVector
 from src.encoder import TrainableBinaryEncoder
@@ -51,7 +51,6 @@ def audit_recalls():
     print(f"Single-Topic Group Recall: {single_topic_recall * 100:.2f}% ({single_topic_correct}/{single_topic_total})\n")
 
     print("=== MULTI-TOPIC GROUP RECALL AUDIT ===")
-    multi_details = []
 
     # 1. Top-1 Only (Before Fallback)
     all_expected_before_fallback = 0
@@ -65,7 +64,7 @@ def audit_recalls():
     total_false_positive_groups = 0
     total_activated_groups = 0
 
-    for idx, (query_text, expected_topics) in enumerate(MULTI_TOPIC_TEST_DATA):
+    for idx, (query_text, expected_topics) in enumerate(MULTI_TOPIC_TEST_DATASET):
         q_dense = fe.transform_dense(query_text)
         Q = encoder.encode(q_dense)
 
@@ -106,7 +105,7 @@ def audit_recalls():
 
     recall_before = found_before_fallback / all_expected_before_fallback
     recall_after = found_after_fallback / all_expected_after_fallback
-    joint_selection_rate = all_groups_jointly_selected / len(MULTI_TOPIC_TEST_DATA)
+    joint_selection_rate = all_groups_jointly_selected / len(MULTI_TOPIC_TEST_DATASET)
     fp_rate = total_false_positive_groups / total_activated_groups if total_activated_groups > 0 else 0.0
 
     print("=== SUMMARY METRICS ===")
