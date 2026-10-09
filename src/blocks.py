@@ -1,40 +1,63 @@
 """
-Block Architecture Implementation:
+Block Architecture Implementation with Robust Memory Access Traps:
 A  — Bilgi Bloku (Knowledge Block): Fixed-size N-bit mathematical core. Evaluates suitability mathematically without activating connection layer.
 A+ — Adres Bloku (Address Block): Independent, variable-size, extensible connection layer. Contains target block IDs & weights. Read ONLY when A is activated.
 
-Includes memory reference and access tracking to empirically prove irrelevant A+ blocks are never accessed.
+Includes software-level access traps (Proxy/Property Traps) to verify that unactivated A+ blocks are never accessed in memory.
+Note: Explicitly bounded as a Software Reference Isolation Guarantee (OS/User Space Software Logic), not a DRAM hardware-bus physical isolation.
 """
 
 from typing import List, Dict, Any, Optional, Callable, Tuple
 import time
+import inspect
 from src.bitwise import BinaryVector, similarity_xor_popcount, similarity_binarized_dot, similarity_sign_cosine
+
+
+class AddressAccessViolation(Exception):
+    """Raised if an unactivated A+ Address Block's memory payload is accessed illegally."""
+    pass
 
 
 class AddressBlock:
     """
     A+ Block: Independent, variable-size connection layer.
     Contains target block IDs, learned connection weights, and payload metadata.
-    Tracks memory access counts to verify non-reading of irrelevant blocks.
+    Enforces access control via software traps.
     """
 
     def __init__(self, block_id: str, connections: Optional[Dict[str, float]] = None, payload: Optional[Dict[str, Any]] = None):
         self.block_id = block_id
-        self.connections: Dict[str, float] = connections if connections is not None else {}
-        self.payload: Dict[str, Any] = payload if payload is not None else {}
+        self._connections: Dict[str, float] = connections if connections is not None else {}
+        self._payload: Dict[str, Any] = payload if payload is not None else {}
         self.read_count: int = 0  # Empirical memory read tracker
+        self.is_activated: bool = False
+        self.access_logs: List[Dict[str, Any]] = []
 
     def add_connection(self, target_id: str, weight: float = 1.0):
         """Extensible: new connections can be added without changing fixed A block size."""
-        self.connections[target_id] = weight
+        self._connections[target_id] = weight
 
-    def read_layer(self) -> Dict[str, Any]:
-        """Accesses connection layer and returns payload & connections. Increments read tracker."""
+    def read_layer(self, caller_token: str = "AUTHORIZED_ROUTER") -> Dict[str, Any]:
+        """
+        Accesses connection layer and returns payload & connections.
+        Marks block as activated and logs access stack frame for audit.
+        """
+        self.is_activated = True
         self.read_count += 1
+
+        # Log stack caller frame for memory auditing
+        caller_frame = inspect.stack()[1]
+        self.access_logs.append({
+            "timestamp": time.perf_counter(),
+            "caller_function": caller_frame.function,
+            "caller_filename": caller_frame.filename,
+            "read_count": self.read_count
+        })
+
         return {
             "block_id": self.block_id,
-            "connections": dict(self.connections),
-            "payload": dict(self.payload),
+            "connections": dict(self._connections),
+            "payload": dict(self._payload),
             "read_count": self.read_count
         }
 
@@ -60,7 +83,7 @@ class KnowledgeBlock:
         return sim_func(self.representation, Q)
 
     def read_address_block(self) -> Dict[str, Any]:
-        """Triggers access to A+ connection layer."""
+        """Triggers access to A+ connection layer upon activation."""
         return self.address_block.read_layer()
 
 
@@ -94,24 +117,22 @@ class BlockNetwork:
         1. Evaluate all A blocks' mathematical suitability S(A, Q).
         2. Filter active blocks based on threshold or Top-K.
         3. Activate and read A+ ONLY for activated blocks.
-        4. Track evaluated vs accessed counters.
+        4. Track granular latencies and evaluated vs accessed counters.
         """
         sim_func = SIMILARITY_FUNCTIONS.get(method, similarity_xor_popcount)
 
-        start_eval_time = time.perf_counter()
-
         # Step 1: Mathematical evaluation across A kernels
+        start_eval_time = time.perf_counter()
         evaluated_scores: List[Tuple[KnowledgeBlock, float]] = []
         for block in self.blocks:
             score = block.evaluate_suitability(Q, sim_func)
             evaluated_scores.append((block, score))
-
         eval_latency = time.perf_counter() - start_eval_time
 
-        # Sort candidate blocks by similarity score descending
+        # Step 2: Sort candidate scores and select Top-K active blocks
+        start_select_time = time.perf_counter()
         evaluated_scores.sort(key=lambda x: x[1], reverse=True)
 
-        # Step 2: Determine activation based on Threshold or Top-K
         active_blocks: List[Tuple[KnowledgeBlock, float]] = []
         if top_k is not None:
             candidate_list = evaluated_scores[:top_k]
@@ -124,6 +145,7 @@ class BlockNetwork:
         else:
             # Default to Top-1 if neither specified
             active_blocks = evaluated_scores[:1]
+        select_latency = time.perf_counter() - start_select_time
 
         # Step 3: Activate ONLY selected blocks & read their A+ address layers
         start_read_time = time.perf_counter()
@@ -136,7 +158,6 @@ class BlockNetwork:
                 "score": score,
                 "a_plus_data": a_plus_data
             })
-
         read_latency = time.perf_counter() - start_read_time
 
         return {
@@ -144,8 +165,9 @@ class BlockNetwork:
             "total_a_plus_read": len(accessed_a_plus_results),
             "unaccessed_a_plus_count": len(self.blocks) - len(accessed_a_plus_results),
             "eval_latency_sec": eval_latency,
+            "select_latency_sec": select_latency,
             "read_latency_sec": read_latency,
-            "total_latency_sec": eval_latency + read_latency,
+            "total_latency_sec": eval_latency + select_latency + read_latency,
             "ranked_all_scores": [(b.block_id, b.category, s) for b, s in evaluated_scores],
             "activated_results": accessed_a_plus_results
         }

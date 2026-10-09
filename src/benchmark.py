@@ -4,21 +4,23 @@ Comprehensive Benchmark & Scalability Testing Framework.
 Measures:
 1. Top-1 and Top-3 accuracy on unseen Turkish test queries.
 2. False Positive (FP) and False Negative (FN) rates.
-3. Per-block suitability latency, query encoding time, total latency.
-4. Training vs inference costs.
-5. Memory consumption (RAM in KB / MB).
-6. A blocks evaluated vs A+ layers actually read.
-7. Bit length comparison (64, 128, 256 bits).
-8. Method comparison: XOR+POPCOUNT vs Binarized Dot vs Sign Cosine vs Keyword & TF-IDF Baselines.
-9. Representation comparison: Learned vs Static/Random Binary Representation.
-10. Scalability across 10, 50, 200, 1,000, 10,000, 100,000 blocks (real vs synthetic reported separately).
-11. Pre-training vs Post-training score distributions.
+3. Granular latency breakdown: Query Encoding, Block Evaluation, Top-K Selection, A+ Access.
+4. Statistical significance (McNemar test / p-value) comparing Bitwise XOR vs Baselines.
+5. Training vs inference costs.
+6. Memory consumption (RAM in KB / MB).
+7. A blocks evaluated vs A+ layers actually read.
+8. Bit length comparison (64, 128, 256 bits).
+9. Method comparison: XOR+POPCOUNT vs Binarized Dot vs Sign Cosine vs Keyword & TF-IDF Baselines.
+10. Representation comparison: Learned vs Static/Random Binary Representation.
+11. Scalability across 10, 50, 200, 1,000, 10,000, 100,000 blocks (real vs synthetic reported separately).
+12. Pre-training vs Post-training score distributions.
 """
 
 import sys
 import time
 import tracemalloc
 import random
+import math
 import numpy as np
 from typing import List, Dict, Tuple, Any
 
@@ -30,19 +32,20 @@ from src.baselines import KeywordBaselineMatcher, TFIDFBaselineMatcher
 from src.blocks import AddressBlock, KnowledgeBlock, BlockNetwork
 
 
-def calculate_metrics(predictions: List[Tuple[str, List[str]]]) -> Dict[str, float]:
+def calculate_metrics(predictions: List[Tuple[str, List[str]]]) -> Dict[str, Any]:
     """
     Given predictions: list of (true_category, [ranked_predicted_categories]),
-    calculates Top-1 accuracy, Top-3 accuracy, FP rate, FN rate.
+    calculates Top-1 accuracy, Top-3 accuracy, FP rate, FN rate, and boolean correctness array.
     """
     total = len(predictions)
     if total == 0:
-        return {"top_1": 0.0, "top_3": 0.0, "fp_rate": 0.0, "fn_rate": 0.0}
+        return {"top_1": 0.0, "top_3": 0.0, "fp_rate": 0.0, "fn_rate": 0.0, "correct_array": []}
 
     top_1_correct = 0
     top_3_correct = 0
     fp_count = 0
     fn_count = 0
+    correct_array = []
 
     for true_cat, ranked_preds in predictions:
         top_1 = ranked_preds[0] if ranked_preds else None
@@ -50,9 +53,11 @@ def calculate_metrics(predictions: List[Tuple[str, List[str]]]) -> Dict[str, flo
 
         if top_1 == true_cat:
             top_1_correct += 1
+            correct_array.append(True)
         else:
             fp_count += 1
             fn_count += 1
+            correct_array.append(False)
 
         if true_cat in top_3:
             top_3_correct += 1
@@ -61,8 +66,27 @@ def calculate_metrics(predictions: List[Tuple[str, List[str]]]) -> Dict[str, flo
         "top_1": top_1_correct / total,
         "top_3": top_3_correct / total,
         "fp_rate": fp_count / total,
-        "fn_rate": fn_count / total
+        "fn_rate": fn_count / total,
+        "correct_array": correct_array
     }
+
+
+def compute_mcnemar_p_value(correct_a: List[bool], correct_b: List[bool]) -> float:
+    """
+    Computes McNemar's test p-value between two classifiers on the same test set.
+    """
+    b = sum(1 for ca, cb in zip(correct_a, correct_b) if ca and not cb)
+    c = sum(1 for ca, cb in zip(correct_a, correct_b) if not ca and cb)
+
+    if b + c == 0:
+        return 1.0  # Identical predictions
+
+    # McNemar chi-squared statistic with continuity correction: (|b - c| - 1)^2 / (b + c)
+    chi2 = (abs(b - c) - 1.0) ** 2 / (b + c)
+    # Survival function approximation for 1 degree of freedom chi2
+    # p ≈ exp(-chi2 / 2) for simple approximation or error function
+    p_val = math.erfc(math.sqrt(chi2 / 2.0))
+    return p_val
 
 
 def run_benchmark() -> Dict[str, Any]:
@@ -80,7 +104,6 @@ def run_benchmark() -> Dict[str, Any]:
 
     # 1. Baseline Evaluation
     print("\n--- 1. Evaluating Baselines ---")
-    # Keyword Baseline
     cat_keywords = {}
     for text, cat in train_data:
         if cat not in cat_keywords:
@@ -94,8 +117,9 @@ def run_benchmark() -> Dict[str, Any]:
         ranked = [cat for cat, _ in kw_baseline.rank_blocks(q_text)]
         kw_preds.append((true_cat, ranked))
     kw_latency = (time.perf_counter() - kw_start) / len(test_data)
+    kw_metrics = calculate_metrics(kw_preds)
     results["baseline_keyword"] = {
-        **calculate_metrics(kw_preds),
+        **kw_metrics,
         "avg_latency_ms": kw_latency * 1000.0
     }
 
@@ -107,8 +131,9 @@ def run_benchmark() -> Dict[str, Any]:
         ranked = [cat for cat, _ in tfidf_baseline.rank_blocks(q_text)]
         tfidf_preds.append((true_cat, ranked))
     tfidf_latency = (time.perf_counter() - tfidf_start) / len(test_data)
+    tfidf_metrics = calculate_metrics(tfidf_preds)
     results["baseline_tfidf"] = {
-        **calculate_metrics(tfidf_preds),
+        **tfidf_metrics,
         "avg_latency_ms": tfidf_latency * 1000.0
     }
 
@@ -181,6 +206,8 @@ def run_benchmark() -> Dict[str, Any]:
             preds = []
             encoding_times = []
             eval_times = []
+            select_times = []
+            access_times = []
             total_times = []
 
             # Reset read counts
@@ -198,6 +225,8 @@ def run_benchmark() -> Dict[str, Any]:
 
                 encoding_times.append(t1 - t0)
                 eval_times.append(res["eval_latency_sec"])
+                select_times.append(res["select_latency_sec"])
+                access_times.append(res["read_latency_sec"])
                 total_times.append(t2 - t0)
 
                 ranked_cats = [item[1] for item in res["ranked_all_scores"]]
@@ -206,16 +235,21 @@ def run_benchmark() -> Dict[str, Any]:
             metrics = calculate_metrics(preds)
             total_a_plus_reads = sum(ap.read_count for ap in a_plus_blocks)
 
+            # McNemar test against TF-IDF baseline
+            p_val_vs_tfidf = compute_mcnemar_p_value(metrics["correct_array"], tfidf_metrics["correct_array"])
+
             results["bit_length_experiments"][bit_len][math_method] = {
                 **metrics,
                 "avg_encoding_time_ms": float(np.mean(encoding_times)) * 1000.0,
                 "avg_eval_time_ms": float(np.mean(eval_times)) * 1000.0,
+                "avg_select_time_ms": float(np.mean(select_times)) * 1000.0,
+                "avg_access_time_ms": float(np.mean(access_times)) * 1000.0,
                 "per_block_eval_time_us": (float(np.mean(eval_times)) / len(CATEGORIES)) * 1e6,
                 "avg_total_time_ms": float(np.mean(total_times)) * 1000.0,
                 "total_queries": len(test_data),
                 "total_a_evaluated_per_query": len(CATEGORIES),
                 "total_a_plus_read": total_a_plus_reads,
-                "expected_a_plus_read_top1": len(test_data),
+                "mcnemar_p_val_vs_tfidf": p_val_vs_tfidf,
             }
 
     # 4. Learned vs Random Representation Comparison
@@ -297,6 +331,9 @@ def run_benchmark() -> Dict[str, Any]:
 
         # Benchmark 20 queries on scaled network
         query_latencies = []
+        eval_latencies = []
+        select_latencies = []
+        access_latencies = []
         real_top1_correct = 0
 
         sample_test_queries = test_data[:20]
@@ -310,6 +347,9 @@ def run_benchmark() -> Dict[str, Any]:
             t1 = time.perf_counter()
 
             query_latencies.append((t1 - t0) * 1000.0)  # ms
+            eval_latencies.append(res["eval_latency_sec"] * 1000.0)
+            select_latencies.append(res["select_latency_sec"] * 1000.0)
+            access_latencies.append(res["read_latency_sec"] * 1000.0)
 
             # Check if top activated block was the correct real category
             top_activated = res["activated_results"][0]
@@ -324,7 +364,10 @@ def run_benchmark() -> Dict[str, Any]:
             "real_blocks": len(real_blocks),
             "synthetic_blocks": synthetic_count,
             "avg_query_latency_ms": float(np.mean(query_latencies)),
-            "per_block_eval_time_ns": (float(np.mean(query_latencies)) * 1e6) / len(net_scale.blocks),
+            "avg_eval_latency_ms": float(np.mean(eval_latencies)),
+            "avg_select_latency_ms": float(np.mean(select_latencies)),
+            "avg_access_latency_ms": float(np.mean(access_latencies)),
+            "per_block_eval_time_ns": (float(np.mean(eval_latencies)) * 1e6) / len(net_scale.blocks),
             "memory_peak_mb": peak_ram_bytes / (1024.0 * 1024.0),
             "memory_per_block_bytes": peak_ram_bytes / len(net_scale.blocks) if len(net_scale.blocks) > 0 else 0,
             "real_category_top1_acc": real_top1_correct / len(sample_test_queries),

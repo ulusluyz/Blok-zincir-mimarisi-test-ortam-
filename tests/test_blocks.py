@@ -1,10 +1,10 @@
 """
-Unit tests for Block Architecture (A and A+), decoupled memory tracking, and Top-K / Threshold activation logic.
+Unit tests for Block Architecture (A and A+), decoupled memory tracking, access traps, and Top-K / Threshold activation logic.
 """
 
 import pytest
 from src.bitwise import BinaryVector
-from src.blocks import AddressBlock, KnowledgeBlock, BlockNetwork
+from src.blocks import AddressBlock, AddressAccessViolation, KnowledgeBlock, BlockNetwork
 
 
 def test_address_block_decoupling_and_read_count():
@@ -22,6 +22,8 @@ def test_address_block_decoupling_and_read_count():
     # Initial read count must be 0
     assert a_plus_1.read_count == 0
     assert a_plus_2.read_count == 0
+    assert not a_plus_1.is_activated
+    assert not a_plus_2.is_activated
 
     # Query matching b1 (0b11110000)
     Q = BinaryVector(0b11110000, bit_length=64)
@@ -31,15 +33,20 @@ def test_address_block_decoupling_and_read_count():
     assert result["total_a_plus_read"] == 1
     assert result["unaccessed_a_plus_count"] == 1
 
-    # Check actual read_count properties on AddressBlocks
+    # Check actual read_count and activation properties on AddressBlocks
     assert a_plus_1.read_count == 1
+    assert a_plus_1.is_activated is True
+    assert len(a_plus_1.access_logs) == 1
+
     assert a_plus_2.read_count == 0, "Irrelevant A+ block MUST NOT be read!"
+    assert a_plus_2.is_activated is False
+    assert len(a_plus_2.access_logs) == 0
 
 
 def test_extensibility_of_address_block():
     a_plus = AddressBlock("block_exp")
-    assert len(a_plus.connections) == 0
+    assert len(a_plus._connections) == 0
 
     # Add dynamic connections without changing fixed A kernel
     a_plus.add_connection("target_block_99", weight=0.85)
-    assert a_plus.connections["target_block_99"] == 0.85
+    assert a_plus._connections["target_block_99"] == 0.85
