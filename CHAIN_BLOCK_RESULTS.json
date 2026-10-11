@@ -1,0 +1,14 @@
+{
+  "status": "BAŞARILI",
+  "total_test_cases": 27,
+  "metrics": {
+    "top1_category_accuracy": 59.25925925925925,
+    "top3_category_accuracy": 74.07407407407408,
+    "negation_disambiguation_accuracy": 92.5925925925926,
+    "cognitive_decision_accuracy": 55.55555555555556,
+    "multihop_deduction_accuracy": 100.0,
+    "average_query_latency_ms": 21.876209259129677,
+    "peak_memory_mb": 2.8947935104370117,
+    "a_plus_read_ratio_pct": 18.75
+  }
+}
