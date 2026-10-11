@@ -69,7 +69,7 @@ class FeatureExtractor:
                 doc_freq[gram] = doc_freq.get(gram, 0) + 1
 
         # Select top max_features by document frequency
-        sorted_grams = sorted(doc_freq.items(), key=lambda x: x[1], reverse=True)[:self.max_features]
+        sorted_grams = sorted(doc_freq.items(), key=lambda x: (-x[1], x[0]))[:self.max_features]
         self.vocab = {gram: idx for idx, (gram, _) in enumerate(sorted_grams)}
 
         # Compute Smooth IDF: log((N + 1) / (df + 1)) + 1

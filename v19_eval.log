@@ -1,0 +1,72 @@
+{
+  "baseline": {
+    "recall": 0.487,
+    "per_seed_recall": [
+      0.4348,
+      0.5652,
+      0.4783,
+      0.5217,
+      0.4348
+    ],
+    "joint_rate": 0.04,
+    "mean_operations": 5.46,
+    "median_latency_ms": 0.4154,
+    "mean_selected_groups": 1.82
+  },
+  "fixed_top3": {
+    "recall": 0.5913,
+    "per_seed_recall": [
+      0.5652,
+      0.6522,
+      0.6087,
+      0.6522,
+      0.4783
+    ],
+    "joint_rate": 0.24,
+    "mean_operations": 9,
+    "median_latency_ms": 0.3112,
+    "mean_selected_groups": 3
+  },
+  "probe_3": {
+    "recall": 0.5913,
+    "per_seed_recall": [
+      0.5652,
+      0.6522,
+      0.6087,
+      0.6522,
+      0.4783
+    ],
+    "joint_rate": 0.24,
+    "mean_operations": 18,
+    "median_latency_ms": 0.3197,
+    "mean_selected_groups": 3
+  },
+  "probe_5": {
+    "recall": 0.6609,
+    "per_seed_recall": [
+      0.6087,
+      0.6522,
+      0.6522,
+      0.7391,
+      0.6522
+    ],
+    "joint_rate": 0.38,
+    "mean_operations": 24,
+    "median_latency_ms": 0.32,
+    "mean_selected_groups": 3
+  },
+  "probe_10": {
+    "recall": 0.687,
+    "per_seed_recall": [
+      0.6522,
+      0.6957,
+      0.6522,
+      0.7391,
+      0.6957
+    ],
+    "joint_rate": 0.44,
+    "mean_operations": 39,
+    "median_latency_ms": 0.3119,
+    "mean_selected_groups": 3
+  }
+}

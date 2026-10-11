@@ -47,7 +47,9 @@ class HierarchicalBlockNetwork:
         max_active_groups: int = 3,
         block_top_k: int = 1,
         sim_func: Optional[Callable[[BinaryVector, BinaryVector], float]] = None,
-        query_id: Optional[str] = None
+        query_id: Optional[str] = None,
+        probe_group_count: int = 5,
+        probe_weight: float = 0.5
     ) -> Dict[str, Any]:
         if query_id is None:
             query_id = f"Q_H2_{uuid.uuid4().hex[:8]}"
@@ -75,6 +77,8 @@ class HierarchicalBlockNetwork:
         active_groups: List[Tuple[BaseGRepresentative, float]] = []
         fallback_triggered = False
         fallback_reason = "None"
+        probe_a_evaluations = 0
+        probe_score_cache = {}
 
         if group_routing_strategy == "top_k":
             active_groups = g_scores[:group_top_k]
@@ -96,6 +100,28 @@ class HierarchicalBlockNetwork:
                 active_groups = candidates[:max_active_groups]
                 if not active_groups:
                     active_groups = g_scores[:1]
+
+        elif group_routing_strategy == "evidence_probe":
+            # Probe the best A score in a bounded number of G candidates.
+            # This costs additional A comparisons, but never reads A+ data.
+            if probe_group_count < 1 or max_active_groups < 1:
+                raise ValueError("probe_group_count and max_active_groups must be positive")
+            if not 0.0 <= probe_weight <= 1.0:
+                raise ValueError("probe_weight must be between 0 and 1")
+            probes = []
+            for g, g_score in g_scores[:probe_group_count]:
+                if g.member_a_blocks:
+                    for b in g.member_a_blocks:
+                        if b not in probe_score_cache:
+                            probe_score_cache[b] = b.evaluate_suitability(Q, sim_func)
+                            probe_a_evaluations += 1
+                    a_best = max(probe_score_cache[b] for b in g.member_a_blocks)
+                else:
+                    a_best = 0.0
+                combined = (1.0 - probe_weight) * g_score + probe_weight * a_best
+                probes.append((g, g_score, combined))
+            probes.sort(key=lambda item: item[2], reverse=True)
+            active_groups = [(g, g_score) for g, g_score, _ in probes[:max_active_groups]]
 
         elif group_routing_strategy == "confidence_margin":
             if not g_scores:
@@ -133,7 +159,7 @@ class HierarchicalBlockNetwork:
 
         evaluated_a_scores: List[Tuple[KnowledgeBlock, float]] = []
         for a_blk in candidate_a_blocks:
-            score = a_blk.evaluate_suitability(Q, sim_func)
+            score = probe_score_cache[a_blk] if a_blk in probe_score_cache else a_blk.evaluate_suitability(Q, sim_func)
             evaluated_a_scores.append((a_blk, score))
 
         a_eval_latency = time.perf_counter() - start_a_eval_time
@@ -180,6 +206,8 @@ class HierarchicalBlockNetwork:
             "total_g_evaluated": len(self.groups),
             "active_g_count": len(active_groups),
             "total_a_evaluated": len(evaluated_a_scores),
+            "probe_a_evaluations": probe_a_evaluations,
+            "total_a_score_operations": probe_a_evaluations + sum(b not in probe_score_cache for b in candidate_a_blocks),
             "total_a_in_network": total_a_in_network,
             "unaccessed_a_count": total_a_in_network - len(evaluated_a_scores),
             "total_a_plus_read": len(accessed_a_plus_results),

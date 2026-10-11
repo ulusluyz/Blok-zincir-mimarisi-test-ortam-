@@ -141,40 +141,58 @@ def evaluate_ood_metrics(
     }
 
 
-def evaluate_access_audit_logs(query_audits: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """
-    Evaluates per-query selection logs to detect unselected A+ read violations.
+def evaluate_access_audit_logs(query_audits: List[Dict[str, Any]], grant_manager: Optional[Any] = None) -> Dict[str, Any]:
+    """Fail closed when audit evidence is missing or inconsistent.
+
+    The audit consumes per-block access events captured at the read boundary,
+    rather than treating the router's read IDs as proof of authorization.
     """
     if not query_audits:
-        return {
-            "status": "NOT_EVALUATED",
-            "total_queries": 0,
-            "unauthorized_attempts": 0,
-            "unauthorized_successful_reads": 0,
-            "unselected_a_plus_read_ratio": 0.0
-        }
+        return {"status": "NOT_EVALUATED", "total_queries": 0,
+                "unauthorized_attempts": 0, "unauthorized_successful_reads": 0,
+                "unselected_a_plus_read_ratio": 0.0}
 
-    total_queries = len(query_audits)
-    unauthorized_attempts = sum(a.get("unauthorized_attempts", 0) for a in query_audits)
-    unauthorized_successful_reads = 0
-
-    for a in query_audits:
-        selected_set = set(a.get("selected_block_ids", []))
-        read_list = a.get("read_block_ids", [])
-        for r_id in read_list:
-            if r_id not in selected_set:
-                unauthorized_successful_reads += 1
-
-    total_a_plus_reads = sum(a.get("a_plus_read_count", 0) for a in query_audits)
-    violation_ratio = (unauthorized_successful_reads / total_a_plus_reads) * 100.0 if total_a_plus_reads > 0 else 0.0
-
-    return {
-        "status": "EVALUATED",
-        "total_queries": total_queries,
-        "unauthorized_attempts": unauthorized_attempts,
-        "unauthorized_successful_reads": unauthorized_successful_reads,
-        "unselected_a_plus_read_ratio": violation_ratio
-    }
+    total_reads = 0
+    violations = 0
+    attempts = 0
+    for audit in query_audits:
+        if grant_manager is not None and not grant_manager.verify_audit(audit):
+            return {"status": "FAIL", "total_queries": len(query_audits),
+                    "unauthorized_attempts": attempts, "unauthorized_successful_reads": violations,
+                    "unselected_a_plus_read_ratio": 0.0, "reason": "Invalid audit signature"}
+        required = ("query_id", "selected_block_ids", "authorized_block_ids",
+                    "read_block_ids", "a_plus_read_count", "access_events")
+        if any(key not in audit for key in required):
+            return {"status": "NOT_EVALUATED", "total_queries": len(query_audits),
+                    "unauthorized_attempts": attempts, "unauthorized_successful_reads": violations,
+                    "unselected_a_plus_read_ratio": 0.0, "reason": "Missing audit evidence"}
+        events = audit["access_events"]
+        if not isinstance(events, list) or not all(isinstance(e, dict) for e in events):
+            return {"status": "NOT_EVALUATED", "total_queries": len(query_audits),
+                    "unauthorized_attempts": attempts, "unauthorized_successful_reads": violations,
+                    "unselected_a_plus_read_ratio": 0.0, "reason": "Malformed access events"}
+        successful = [e for e in events if e.get("status") == "AUTHORIZED_READ"]
+        actual_ids = [e.get("block_id") for e in successful]
+        selected = set(audit["selected_block_ids"])
+        authorized = set(audit["authorized_block_ids"])
+        if (len(successful) != audit["a_plus_read_count"] or
+                sorted(actual_ids) != sorted(audit["read_block_ids"])):
+            return {"status": "NOT_EVALUATED", "total_queries": len(query_audits),
+                    "unauthorized_attempts": attempts, "unauthorized_successful_reads": violations,
+                    "unselected_a_plus_read_ratio": 0.0, "reason": "Inconsistent read counts"}
+        attempts += sum(str(e.get("status", "")).startswith("VIOLATION_") for e in events)
+        violations += sum(e.get("block_id") not in selected or
+                          e.get("block_id") not in authorized or
+                          e.get("query_id") != audit["query_id"] for e in successful)
+        total_reads += len(successful)
+    if total_reads == 0:
+        return {"status": "NOT_EVALUATED", "total_queries": len(query_audits),
+                "unauthorized_attempts": attempts, "unauthorized_successful_reads": violations,
+                "unselected_a_plus_read_ratio": 0.0, "reason": "No successful reads"}
+    return {"status": "FAIL" if violations else "EVALUATED",
+            "total_queries": len(query_audits), "unauthorized_attempts": attempts,
+            "unauthorized_successful_reads": violations,
+            "unselected_a_plus_read_ratio": 100.0 * violations / total_reads}
 
 
 def calculate_latency_stats(latencies_ms: List[float]) -> Dict[str, float]:

@@ -142,8 +142,13 @@ def test_access_audit_violation_triggers_fail():
     audit_logs = [{
         "query_id": "Q_BAD",
         "selected_block_ids": ["B1"],
+        "authorized_block_ids": ["B1"],
         "read_block_ids": ["B1", "B2_UNSELECTED"],  # Injected violation: B2 was read without being selected!
-        "a_plus_read_count": 2
+        "a_plus_read_count": 2,
+        "access_events": [
+            {"query_id": "Q_BAD", "block_id": "B1", "status": "AUTHORIZED_READ"},
+            {"query_id": "Q_BAD", "block_id": "B2_UNSELECTED", "status": "AUTHORIZED_READ"},
+        ]
     }]
 
     eval_res = evaluate_access_audit_logs(audit_logs)

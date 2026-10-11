@@ -1,0 +1,255 @@
+{
+  "dataset": "src.dataset.get_full_split_datasets UNSEEN_TEST_MULTI_DATASET",
+  "encoder": "128-bit seed=42 epochs=15; static G first train sample; 3 A blocks/category",
+  "warning": "Experimental static-G configuration, not a reproduction of the reported 51.7% trained-G result. No statistical significance implied. Timing includes full routing and A+ read.",
+  "results": [
+    {
+      "strategy": "dynamic_multi_label",
+      "multi_topic_group_recall": 0.5217,
+      "joint_selection_recall": 0.1,
+      "median_latency_ms": 0.3129,
+      "mean_a_evaluated": 5.4,
+      "mean_probe_a_evaluations": 0,
+      "mean_total_a_score_operations": 5.4,
+      "mean_groups_selected": 1.8,
+      "found": 12,
+      "expected": 23,
+      "queries": 10,
+      "selected_groups": [
+        [
+          "Elektronik",
+          "Fizik",
+          "Gezegenler"
+        ],
+        [
+          "Fizik"
+        ],
+        [
+          "Biyoloji",
+          "Gezegenler",
+          "Matematik"
+        ],
+        [
+          "Edebiyat"
+        ],
+        [
+          "Biyoloji",
+          "Fizik"
+        ],
+        [
+          "Alakasız",
+          "Biyoloji"
+        ],
+        [
+          "Gezegenler"
+        ],
+        [
+          "Elektronik"
+        ],
+        [
+          "Edebiyat"
+        ],
+        [
+          "Biyoloji",
+          "Edebiyat",
+          "Elektronik"
+        ]
+      ]
+    },
+    {
+      "strategy": "probe_3",
+      "multi_topic_group_recall": 0.6522,
+      "joint_selection_recall": 0.3,
+      "median_latency_ms": 0.5089,
+      "mean_a_evaluated": 9,
+      "mean_probe_a_evaluations": 9,
+      "mean_total_a_score_operations": 18,
+      "mean_groups_selected": 3.0,
+      "found": 15,
+      "expected": 23,
+      "queries": 10,
+      "selected_groups": [
+        [
+          "Elektronik",
+          "Fizik",
+          "Gezegenler"
+        ],
+        [
+          "Biyoloji",
+          "Fizik",
+          "Gezegenler"
+        ],
+        [
+          "Biyoloji",
+          "Gezegenler",
+          "Matematik"
+        ],
+        [
+          "Alakasız",
+          "Biyoloji",
+          "Edebiyat"
+        ],
+        [
+          "Biyoloji",
+          "Elektronik",
+          "Fizik"
+        ],
+        [
+          "Alakasız",
+          "Biyoloji",
+          "Selamlaşma"
+        ],
+        [
+          "Biyoloji",
+          "Elektronik",
+          "Gezegenler"
+        ],
+        [
+          "Elektronik",
+          "Fizik",
+          "Matematik"
+        ],
+        [
+          "Biyoloji",
+          "Edebiyat",
+          "Tarih"
+        ],
+        [
+          "Biyoloji",
+          "Edebiyat",
+          "Elektronik"
+        ]
+      ]
+    },
+    {
+      "strategy": "probe_5",
+      "multi_topic_group_recall": 0.6957,
+      "joint_selection_recall": 0.4,
+      "median_latency_ms": 0.3391,
+      "mean_a_evaluated": 9,
+      "mean_probe_a_evaluations": 15,
+      "mean_total_a_score_operations": 24,
+      "mean_groups_selected": 3.0,
+      "found": 16,
+      "expected": 23,
+      "queries": 10,
+      "selected_groups": [
+        [
+          "Fizik",
+          "Gezegenler",
+          "Matematik"
+        ],
+        [
+          "Biyoloji",
+          "Fizik",
+          "Gezegenler"
+        ],
+        [
+          "Biyoloji",
+          "Fizik",
+          "Matematik"
+        ],
+        [
+          "Alakasız",
+          "Edebiyat",
+          "Fizik"
+        ],
+        [
+          "Biyoloji",
+          "Elektronik",
+          "Fizik"
+        ],
+        [
+          "Alakasız",
+          "Biyoloji",
+          "Fizik"
+        ],
+        [
+          "Biyoloji",
+          "Gezegenler",
+          "Matematik"
+        ],
+        [
+          "Elektronik",
+          "Fizik",
+          "Tarih"
+        ],
+        [
+          "Biyoloji",
+          "Edebiyat",
+          "Tarih"
+        ],
+        [
+          "Biyoloji",
+          "Edebiyat",
+          "Elektronik"
+        ]
+      ]
+    },
+    {
+      "strategy": "probe_10",
+      "multi_topic_group_recall": 0.6957,
+      "joint_selection_recall": 0.4,
+      "median_latency_ms": 0.2995,
+      "mean_a_evaluated": 9,
+      "mean_probe_a_evaluations": 30,
+      "mean_total_a_score_operations": 39,
+      "mean_groups_selected": 3.0,
+      "found": 16,
+      "expected": 23,
+      "queries": 10,
+      "selected_groups": [
+        [
+          "Fizik",
+          "Gezegenler",
+          "Matematik"
+        ],
+        [
+          "Biyoloji",
+          "Fizik",
+          "Gezegenler"
+        ],
+        [
+          "Biyoloji",
+          "Fizik",
+          "Matematik"
+        ],
+        [
+          "Alakasız",
+          "Edebiyat",
+          "Fizik"
+        ],
+        [
+          "Biyoloji",
+          "Elektronik",
+          "Fizik"
+        ],
+        [
+          "Alakasız",
+          "Biyoloji",
+          "Fizik"
+        ],
+        [
+          "Biyoloji",
+          "Gezegenler",
+          "Matematik"
+        ],
+        [
+          "Elektronik",
+          "Fizik",
+          "Tarih"
+        ],
+        [
+          "Biyoloji",
+          "Edebiyat",
+          "Tarih"
+        ],
+        [
+          "Biyoloji",
+          "Edebiyat",
+          "Elektronik"
+        ]
+      ]
+    }
+  ]
+}

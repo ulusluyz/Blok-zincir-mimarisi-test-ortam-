@@ -1,0 +1,10 @@
+=== STARTING HIERARCHICAL ROUTING BENCHMARK SUITE ===
+
+--- 1. Evaluating Multi-Topic Query Group Routing ---
+
+--- 2. Scalability & Comparative Strategy Benchmark (10 to 100,000 blocks) ---
+
+Building and benchmarking network with scale: 1000 blocks...
+Scale   1000 blocks -> Full Scan:    5.238 ms | Learned G Route:    3.263 ms (Speedup:   1.6x) | Peak RAM:   1.19 MB
+
+Saved benchmark findings to results.json!

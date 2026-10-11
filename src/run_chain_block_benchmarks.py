@@ -309,11 +309,11 @@ def run_full_chain_block_benchmark():
     cat_top3_acc = (cat_top3_correct / n_in_domain) * 100.0 if n_in_domain else 0.0
 
     neg_cases = [c for c in test_cases if c.id.startswith("CB_NEG")]
-    negation_acc = (negation_correct / len(neg_cases)) * 100.0 if neg_cases else 100.0
+    negation_acc = (negation_correct / len(neg_cases)) * 100.0 if neg_cases else 0.0
 
     decision_acc = (decision_correct / n_cases) * 100.0
     multihop_cases = [c for c in test_cases if c.relation_chain]
-    multihop_acc = (multihop_correct / len(multihop_cases)) * 100.0 if multihop_cases else 100.0
+    multihop_acc = (multihop_correct / len(multihop_cases)) * 100.0 if multihop_cases else 0.0
 
     # Calculate multi-topic metrics, OOD metrics, access isolation audit, and latency stats
     retrieval_m = evaluate_retrieval_metrics(preds_top3, ground_truth_sets, k=3)
@@ -327,11 +327,11 @@ def run_full_chain_block_benchmark():
     criteria = [
         evaluate_criterion("InDomain_Top1_Accuracy", cat_top1_acc, 80.0, ">=", "In-domain Top-1 category accuracy >= 80%"),
         evaluate_criterion("InDomain_Top3_Accuracy", cat_top3_acc, 90.0, ">=", "In-domain Top-3 category accuracy >= 90%"),
-        evaluate_criterion("Unseen_Negation_Disambiguation", negation_acc, 85.0, ">=", "Unseen command negation disambiguation >= 85%"),
+        evaluate_criterion("Unseen_Negation_Disambiguation", negation_acc, 85.0, ">=", "Unseen command negation disambiguation >= 85%", is_evaluated=bool(neg_cases)),
         evaluate_criterion("Cognitive_Decision_Accuracy", decision_acc, 80.0, ">=", "Cognitive auditor decision accuracy >= 80%"),
-        evaluate_criterion("MultiHop_Transitive_Inference", multihop_acc, 90.0, ">=", "Multi-hop relational deduction accuracy >= 90%"),
-        evaluate_criterion("OOD_True_Reject_Rate", ood_m["true_reject_rate"], 90.0, ">=", "OOD True Reject Rate >= 90%"),
-        evaluate_criterion("Unselected_APlus_Read_Ratio", access_m["unselected_a_plus_read_ratio"], 0.0, "==", "Unselected A+ address layer read ratio == 0%"),
+        evaluate_criterion("MultiHop_Transitive_Inference", multihop_acc, 90.0, ">=", "Multi-hop relational deduction accuracy >= 90%", is_evaluated=bool(multihop_cases)),
+        evaluate_criterion("OOD_True_Reject_Rate", ood_m["true_reject_rate"], 90.0, ">=", "OOD True Reject Rate >= 90%", is_evaluated=ood_m["status"] == "EVALUATED"),
+        evaluate_criterion("Unselected_APlus_Read_Ratio", access_m["unselected_a_plus_read_ratio"], 0.0, "==", "Unselected A+ address layer read ratio == 0%", is_evaluated=access_m["status"] in ("EVALUATED", "FAIL")),
         evaluate_criterion("Average_Query_Latency", lat_stats["mean_ms"], 50.0, "<=", "Average query latency <= 50 ms"),
     ]
 

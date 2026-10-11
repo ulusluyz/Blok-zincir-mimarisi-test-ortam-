@@ -29,7 +29,7 @@ import json
 import numpy as np
 from typing import List, Dict, Tuple, Any
 
-from src.dataset import CATEGORIES, SMALL_TRAIN_DATA, SMALL_TEST_DATA, MULTI_TOPIC_TEST_DATA, get_expanded_dataset
+from src.dataset import CATEGORIES, SMALL_TRAIN_DATA, SMALL_TEST_DATA, UNSEEN_TEST_MULTI_DATASET, get_expanded_dataset
 from src.features import FeatureExtractor
 from src.bitwise import BinaryVector, similarity_xor_popcount
 from src.encoder import TrainableBinaryEncoder
@@ -41,24 +41,20 @@ from src.search_indexes import LSHIndex, IVFIndex, HNSWIndex
 def calculate_metrics(predictions: List[Tuple[str, List[str]]]) -> Dict[str, Any]:
     total = len(predictions)
     if total == 0:
-        return {"top_1": 0.0, "top_3": 0.0, "fp_rate": 0.0, "fn_rate": 0.0, "correct_array": []}
+        return {"top_1": 0.0, "top_3": 0.0, "fp_rate": None, "fn_rate": None, "correct_array": []}
 
     top_1_correct = 0
     top_3_correct = 0
-    fp_count = 0
-    fn_count = 0
     correct_array = []
 
     for true_cat, ranked_preds in predictions:
         top_1 = ranked_preds[0] if ranked_preds else None
-        top_3 = ranked_preds[:3]
+        top_3 = list(dict.fromkeys(ranked_preds))[:3]
 
         if top_1 == true_cat:
             top_1_correct += 1
             correct_array.append(True)
         else:
-            fp_count += 1
-            fn_count += 1
             correct_array.append(False)
 
         if true_cat in top_3:
@@ -67,13 +63,13 @@ def calculate_metrics(predictions: List[Tuple[str, List[str]]]) -> Dict[str, Any
     return {
         "top_1": top_1_correct / total,
         "top_3": top_3_correct / total,
-        "fp_rate": fp_count / total,
-        "fn_rate": fn_count / total,
+        "fp_rate": None,  # Cannot calculate false-positive rate without negative-class predictions.
+        "fn_rate": None,  # Cannot calculate false-negative rate without a defined binary decision.
         "correct_array": correct_array
     }
 
 
-def run_hierarchical_benchmark() -> Dict[str, Any]:
+def run_hierarchical_benchmark(block_counts=None, max_queries=None, include_indexes=True) -> Dict[str, Any]:
     print("=== STARTING HIERARCHICAL ROUTING BENCHMARK SUITE ===")
     results = {}
 
@@ -114,9 +110,11 @@ def run_hierarchical_benchmark() -> Dict[str, Any]:
     # 1. Multi-Topic Routing Recall Benchmark
     print("\n--- 1. Evaluating Multi-Topic Query Group Routing ---")
     h_net_base = HierarchicalBlockNetwork(list(category_groups.values()))
+    h_net_base.register_flat_blocks(real_a_blocks)
     multi_topic_results = []
 
-    for query_text, expected_topics in MULTI_TOPIC_TEST_DATA:
+    for item in UNSEEN_TEST_MULTI_DATASET:
+        query_text, expected_topics = item["text"], item["expected_categories"]
         q_dense = fe.transform_dense(query_text)
         Q = encoder.encode(q_dense)
 
@@ -159,7 +157,11 @@ def run_hierarchical_benchmark() -> Dict[str, Any]:
     # 2. Scalability & Comparative Routing Strategy Benchmark across Block Counts
     print("\n--- 2. Scalability & Comparative Strategy Benchmark (10 to 100,000 blocks) ---")
     results["scalability_comparisons"] = {}
-    block_counts = [10, 100, 1000, 10000, 100000]
+    block_counts = [10, 100, 1000, 10000, 100000] if block_counts is None else list(block_counts)
+    if max_queries is not None:
+        encoded_test_queries = encoded_test_queries[:max_queries]
+    if not encoded_test_queries:
+        raise ValueError("Benchmark requires at least one query")
 
     rng = random.Random(42)
 
@@ -201,15 +203,16 @@ def run_hierarchical_benchmark() -> Dict[str, Any]:
         flat_net_scale = BlockNetwork(all_scale_a_blocks)
 
         # Build Auxiliary Indexes
-        lsh_idx = LSHIndex(num_tables=4, hash_size=8, bit_length=128)
-        for b in all_scale_a_blocks:
-            lsh_idx.add_block(b)
+        lsh_idx = LSHIndex(num_tables=4, hash_size=8, bit_length=128) if include_indexes else None
+        if include_indexes:
+            for b in all_scale_a_blocks:
+                lsh_idx.add_block(b)
 
-        ivf_idx = IVFIndex(num_centroids=min(16, target_count), bit_length=128)
-        ivf_idx.fit_and_build(all_scale_a_blocks)
-
-        hnsw_idx = HNSWIndex(M=min(8, target_count))
-        hnsw_idx.build_graph(all_scale_a_blocks[:min(1000, target_count)])  # Sub-graph for benchmarking
+        if include_indexes:
+            ivf_idx = IVFIndex(num_centroids=min(16, target_count), bit_length=128)
+            ivf_idx.fit_and_build(all_scale_a_blocks)
+            hnsw_idx = HNSWIndex(M=min(8, target_count))
+            hnsw_idx.build_graph(all_scale_a_blocks[:min(1000, target_count)])  # Sub-graph for benchmarking
 
         current_ram_bytes, peak_ram_bytes = tracemalloc.get_traced_memory()
         tracemalloc.stop()
@@ -237,6 +240,7 @@ def run_hierarchical_benchmark() -> Dict[str, Any]:
         g_latencies, g_preds = [], []
         g_eval_times, a_eval_times = [], []
         correct_group_retained = 0
+        evaluated_counts, pruned_counts = [], []
 
         for q_text, true_cat, Q in encoded_test_queries:
             t0 = time.perf_counter()
@@ -252,6 +256,8 @@ def run_hierarchical_benchmark() -> Dict[str, Any]:
             if true_cat in active_cats:
                 correct_group_retained += 1
 
+            evaluated_counts.append(res["total_a_evaluated"])
+            pruned_counts.append(res["unaccessed_a_count"])
             g_preds.append((true_cat, [item[1] for item in res["ranked_candidate_a_scores"]]))
 
         avg_g_lat = float(np.mean(g_latencies))
@@ -263,8 +269,8 @@ def run_hierarchical_benchmark() -> Dict[str, Any]:
             "avg_a_eval_time_ms": float(np.mean(a_eval_times)),
             "correct_group_recall_rate": correct_group_retained / len(encoded_test_queries),
             "false_pruning_rate": 1.0 - (correct_group_retained / len(encoded_test_queries)),
-            "avg_a_evaluated": res["total_a_evaluated"],
-            "avg_unaccessed_a_pruned": res["unaccessed_a_count"]
+            "avg_a_evaluated": float(np.mean(evaluated_counts)),
+            "avg_unaccessed_a_pruned": float(np.mean(pruned_counts))
         }
 
         # 3. Multi-level Hierarchical Group Routing (3-Level)
@@ -283,42 +289,43 @@ def run_hierarchical_benchmark() -> Dict[str, Any]:
             "speedup_vs_full": avg_full_lat / avg_ml_lat if avg_ml_lat > 0 else 1.0
         }
 
-        # 4. LSH Pre-filtering
-        lsh_latencies, lsh_preds = [], []
-        for q_text, true_cat, Q in encoded_test_queries:
-            t0 = time.perf_counter()
-            cands = lsh_idx.query_candidates(Q, fallback_all=all_scale_a_blocks)
-            # Evaluate candidates
-            scores = [(b.category, similarity_xor_popcount(b.representation, Q)) for b in cands]
-            scores.sort(key=lambda x: x[1], reverse=True)
-            t1 = time.perf_counter()
-            lsh_latencies.append((t1 - t0) * 1000.0)
-            lsh_preds.append((true_cat, [s[0] for s in scores]))
+        if include_indexes:
+            # 4. LSH Pre-filtering
+            lsh_latencies, lsh_preds = [], []
+            for q_text, true_cat, Q in encoded_test_queries:
+                t0 = time.perf_counter()
+                cands = lsh_idx.query_candidates(Q, fallback_all=all_scale_a_blocks)
+                # Evaluate candidates
+                scores = [(b.category, similarity_xor_popcount(b.representation, Q)) for b in cands]
+                scores.sort(key=lambda x: x[1], reverse=True)
+                t1 = time.perf_counter()
+                lsh_latencies.append((t1 - t0) * 1000.0)
+                lsh_preds.append((true_cat, [s[0] for s in scores]))
 
-        avg_lsh_lat = float(np.mean(lsh_latencies))
-        method_benchmarks["lsh_candidate_prefilter"] = {
-            **calculate_metrics(lsh_preds),
-            "avg_latency_ms": avg_lsh_lat,
-            "speedup_vs_full": avg_full_lat / avg_lsh_lat if avg_lsh_lat > 0 else 1.0
-        }
+            avg_lsh_lat = float(np.mean(lsh_latencies))
+            method_benchmarks["lsh_candidate_prefilter"] = {
+                **calculate_metrics(lsh_preds),
+                "avg_latency_ms": avg_lsh_lat,
+                "speedup_vs_full": avg_full_lat / avg_lsh_lat if avg_lsh_lat > 0 else 1.0
+            }
 
-        # 5. IVF Index
-        ivf_latencies, ivf_preds = [], []
-        for q_text, true_cat, Q in encoded_test_queries:
-            t0 = time.perf_counter()
-            cands = ivf_idx.query_candidates(Q, nprobe=2)
-            scores = [(b.category, similarity_xor_popcount(b.representation, Q)) for b in cands]
-            scores.sort(key=lambda x: x[1], reverse=True)
-            t1 = time.perf_counter()
-            ivf_latencies.append((t1 - t0) * 1000.0)
-            ivf_preds.append((true_cat, [s[0] for s in scores]))
+            # 5. IVF Index
+            ivf_latencies, ivf_preds = [], []
+            for q_text, true_cat, Q in encoded_test_queries:
+                t0 = time.perf_counter()
+                cands = ivf_idx.query_candidates(Q, nprobe=2)
+                scores = [(b.category, similarity_xor_popcount(b.representation, Q)) for b in cands]
+                scores.sort(key=lambda x: x[1], reverse=True)
+                t1 = time.perf_counter()
+                ivf_latencies.append((t1 - t0) * 1000.0)
+                ivf_preds.append((true_cat, [s[0] for s in scores]))
 
-        avg_ivf_lat = float(np.mean(ivf_latencies))
-        method_benchmarks["ivf_index_search"] = {
-            **calculate_metrics(ivf_preds),
-            "avg_latency_ms": avg_ivf_lat,
-            "speedup_vs_full": avg_full_lat / avg_ivf_lat if avg_ivf_lat > 0 else 1.0
-        }
+            avg_ivf_lat = float(np.mean(ivf_latencies))
+            method_benchmarks["ivf_index_search"] = {
+                **calculate_metrics(ivf_preds),
+                "avg_latency_ms": avg_ivf_lat,
+                "speedup_vs_full": avg_full_lat / avg_ivf_lat if avg_ivf_lat > 0 else 1.0
+            }
 
         results["scalability_comparisons"][target_count] = {
             "total_blocks": len(all_scale_a_blocks),
@@ -342,4 +349,10 @@ def run_hierarchical_benchmark() -> Dict[str, Any]:
 
 
 if __name__ == "__main__":
-    run_hierarchical_benchmark()
+    import argparse
+    parser = argparse.ArgumentParser(description="Bounded, reproducible hierarchical routing benchmark")
+    parser.add_argument("--scales", type=int, nargs="+", default=[10,100,1000,10000,100000])
+    parser.add_argument("--max-queries", type=int, default=None)
+    parser.add_argument("--skip-indexes", action="store_true", help="Skip LSH/IVF/HNSW construction and comparisons")
+    args = parser.parse_args()
+    run_hierarchical_benchmark(block_counts=args.scales, max_queries=args.max_queries, include_indexes=not args.skip_indexes)

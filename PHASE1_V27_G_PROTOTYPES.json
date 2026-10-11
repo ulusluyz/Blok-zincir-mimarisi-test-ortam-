@@ -1,0 +1,1827 @@
+{
+  "notes": "Training-only prototypes. 5 encoder initializations x 10 fixed held-out queries, not 50 independent queries. Top-3 groups; no A evidence operations. No hyperparameter tuning.",
+  "summary": {
+    "first": {
+      "recall": 0.6609,
+      "joint_rate": 0.36,
+      "mean_g_similarity_operations": 10
+    },
+    "medoid": {
+      "recall": 0.6522,
+      "joint_rate": 0.38,
+      "mean_g_similarity_operations": 10
+    },
+    "majority": {
+      "recall": 0.6522,
+      "joint_rate": 0.38,
+      "mean_g_similarity_operations": 10
+    },
+    "max_member": {
+      "recall": 0.687,
+      "joint_rate": 0.42,
+      "mean_g_similarity_operations": 60
+    }
+  },
+  "records": [
+    {
+      "seed": 11,
+      "query": 0,
+      "method": "first",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 0,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 0,
+      "method": "majority",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 0,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 11,
+      "query": 1,
+      "method": "first",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 1,
+      "method": "medoid",
+      "hits": 3,
+      "expected": 3,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 1,
+      "method": "majority",
+      "hits": 3,
+      "expected": 3,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 1,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 11,
+      "query": 2,
+      "method": "first",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 2,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 2,
+      "method": "majority",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 2,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 11,
+      "query": 3,
+      "method": "first",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 3,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 3,
+      "method": "majority",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 3,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 11,
+      "query": 4,
+      "method": "first",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 4,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 4,
+      "method": "majority",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 4,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 11,
+      "query": 5,
+      "method": "first",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 5,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 5,
+      "method": "majority",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 5,
+      "method": "max_member",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 11,
+      "query": 6,
+      "method": "first",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 6,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 6,
+      "method": "majority",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 6,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 11,
+      "query": 7,
+      "method": "first",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 7,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 7,
+      "method": "majority",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 7,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 11,
+      "query": 8,
+      "method": "first",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 8,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 8,
+      "method": "majority",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 8,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 11,
+      "query": 9,
+      "method": "first",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 9,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 9,
+      "method": "majority",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 11,
+      "query": 9,
+      "method": "max_member",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 23,
+      "query": 0,
+      "method": "first",
+      "hits": 3,
+      "expected": 3,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 0,
+      "method": "medoid",
+      "hits": 3,
+      "expected": 3,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 0,
+      "method": "majority",
+      "hits": 3,
+      "expected": 3,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 0,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 23,
+      "query": 1,
+      "method": "first",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 1,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 1,
+      "method": "majority",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 1,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 23,
+      "query": 2,
+      "method": "first",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 2,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 2,
+      "method": "majority",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 2,
+      "method": "max_member",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 23,
+      "query": 3,
+      "method": "first",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 3,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 3,
+      "method": "majority",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 3,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 23,
+      "query": 4,
+      "method": "first",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 4,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 4,
+      "method": "majority",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 4,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 23,
+      "query": 5,
+      "method": "first",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 5,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 5,
+      "method": "majority",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 5,
+      "method": "max_member",
+      "hits": 0,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 23,
+      "query": 6,
+      "method": "first",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 6,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 6,
+      "method": "majority",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 6,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 23,
+      "query": 7,
+      "method": "first",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 7,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 7,
+      "method": "majority",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 7,
+      "method": "max_member",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 23,
+      "query": 8,
+      "method": "first",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 8,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 8,
+      "method": "majority",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 8,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 23,
+      "query": 9,
+      "method": "first",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 9,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 9,
+      "method": "majority",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 23,
+      "query": 9,
+      "method": "max_member",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 42,
+      "query": 0,
+      "method": "first",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 0,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 0,
+      "method": "majority",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 0,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 42,
+      "query": 1,
+      "method": "first",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 1,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 1,
+      "method": "majority",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 1,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 42,
+      "query": 2,
+      "method": "first",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 2,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 2,
+      "method": "majority",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 2,
+      "method": "max_member",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 42,
+      "query": 3,
+      "method": "first",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 3,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 3,
+      "method": "majority",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 3,
+      "method": "max_member",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 42,
+      "query": 4,
+      "method": "first",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 4,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 4,
+      "method": "majority",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 4,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 42,
+      "query": 5,
+      "method": "first",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 5,
+      "method": "medoid",
+      "hits": 0,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 5,
+      "method": "majority",
+      "hits": 0,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 5,
+      "method": "max_member",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 42,
+      "query": 6,
+      "method": "first",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 6,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 6,
+      "method": "majority",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 6,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 42,
+      "query": 7,
+      "method": "first",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 7,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 7,
+      "method": "majority",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 7,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 42,
+      "query": 8,
+      "method": "first",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 8,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 8,
+      "method": "majority",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 8,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 42,
+      "query": 9,
+      "method": "first",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 9,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 9,
+      "method": "majority",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 42,
+      "query": 9,
+      "method": "max_member",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 67,
+      "query": 0,
+      "method": "first",
+      "hits": 3,
+      "expected": 3,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 0,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 0,
+      "method": "majority",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 0,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 67,
+      "query": 1,
+      "method": "first",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 1,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 1,
+      "method": "majority",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 1,
+      "method": "max_member",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 67,
+      "query": 2,
+      "method": "first",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 2,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 2,
+      "method": "majority",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 2,
+      "method": "max_member",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 67,
+      "query": 3,
+      "method": "first",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 3,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 3,
+      "method": "majority",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 3,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 67,
+      "query": 4,
+      "method": "first",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 4,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 4,
+      "method": "majority",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 4,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 67,
+      "query": 5,
+      "method": "first",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 5,
+      "method": "medoid",
+      "hits": 0,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 5,
+      "method": "majority",
+      "hits": 0,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 5,
+      "method": "max_member",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 67,
+      "query": 6,
+      "method": "first",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 6,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 6,
+      "method": "majority",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 6,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 67,
+      "query": 7,
+      "method": "first",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 7,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 7,
+      "method": "majority",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 7,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 67,
+      "query": 8,
+      "method": "first",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 8,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 8,
+      "method": "majority",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 8,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 67,
+      "query": 9,
+      "method": "first",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 9,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 9,
+      "method": "majority",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 67,
+      "query": 9,
+      "method": "max_member",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 101,
+      "query": 0,
+      "method": "first",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 0,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 0,
+      "method": "majority",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 0,
+      "method": "max_member",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 101,
+      "query": 1,
+      "method": "first",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 1,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 1,
+      "method": "majority",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 1,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 101,
+      "query": 2,
+      "method": "first",
+      "hits": 0,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 2,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 2,
+      "method": "majority",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 2,
+      "method": "max_member",
+      "hits": 1,
+      "expected": 3,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 101,
+      "query": 3,
+      "method": "first",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 3,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 3,
+      "method": "majority",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 3,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 101,
+      "query": 4,
+      "method": "first",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 4,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 4,
+      "method": "majority",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 4,
+      "method": "max_member",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 101,
+      "query": 5,
+      "method": "first",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 5,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 5,
+      "method": "majority",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 5,
+      "method": "max_member",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 101,
+      "query": 6,
+      "method": "first",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 6,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 6,
+      "method": "majority",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 6,
+      "method": "max_member",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 101,
+      "query": 7,
+      "method": "first",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 7,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 7,
+      "method": "majority",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 7,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 101,
+      "query": 8,
+      "method": "first",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 8,
+      "method": "medoid",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 8,
+      "method": "majority",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 8,
+      "method": "max_member",
+      "hits": 2,
+      "expected": 2,
+      "joint": 1,
+      "g_similarity_operations": 60
+    },
+    {
+      "seed": 101,
+      "query": 9,
+      "method": "first",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 9,
+      "method": "medoid",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 9,
+      "method": "majority",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 10
+    },
+    {
+      "seed": 101,
+      "query": 9,
+      "method": "max_member",
+      "hits": 1,
+      "expected": 2,
+      "joint": 0,
+      "g_similarity_operations": 60
+    }
+  ]
+}

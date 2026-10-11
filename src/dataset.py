@@ -188,13 +188,10 @@ UNSEEN_TEST_MULTI_DATASET: List[Dict[str, Any]] = [
 def get_full_split_datasets():
     """
     Returns (train_data, val_data, test_single_data, test_multi_data).
-    Verifies zero exact leakage between train and unseen test.
+    Verifies normalized exact leakage across all four partitions.
     """
-    train_texts = {t.strip().lower() for t, _ in EXPANDED_TRAIN_DATA}
-    test_texts = {item["text"].strip().lower() for item in UNSEEN_TEST_SINGLE_DATASET}
-    overlap = train_texts.intersection(test_texts)
-    assert len(overlap) == 0, f"Leakage detected! {overlap}"
-
+    from src.split_audit import assert_no_split_leakage
+    assert_no_split_leakage(EXPANDED_TRAIN_DATA, VAL_DATASET, UNSEEN_TEST_SINGLE_DATASET, UNSEEN_TEST_MULTI_DATASET)
     return EXPANDED_TRAIN_DATA, VAL_DATASET, UNSEEN_TEST_SINGLE_DATASET, UNSEEN_TEST_MULTI_DATASET
 
 

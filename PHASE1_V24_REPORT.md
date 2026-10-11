@@ -9,4 +9,4 @@
 - Bu denetim semantik benzerliği veya paraphrase veri sızıntısını saptamaz.
 - Tam pytest denemesi çalışma süresi sınırında durdu; V24 için 130/130 iddia edilmiyor.
 - G çok konulu kalitesi, gerçek elektrik kesintisi ve fiziksel disk arızası doğrulanmadı.
-- GitHub güncellemesi bu aşamada kısmi; tam V24 proje eşitlemesi doğrulanmadı.
+- GitHub değiştirilmedi.

@@ -1,0 +1,62 @@
+{
+  "medoid": {
+    "independent_query_count": 10,
+    "paired_seed_query_count": 50,
+    "delta_recall": -0.008696,
+    "delta_joint": 0.02,
+    "query_cluster_bootstrap_95ci_recall": [
+      -0.069565,
+      0.043478
+    ],
+    "query_cluster_bootstrap_95ci_joint": [
+      -0.04,
+      0.08
+    ],
+    "query_wins": 3,
+    "query_losses": 2,
+    "query_ties": 5,
+    "bootstrap_draws": 10000,
+    "bootstrap_seed": 2801,
+    "caveat": "Exploratory 10-query sample; seeds do not increase independent query count. Candidate selected after observing this test set: confidence intervals are descriptive, not confirmatory."
+  },
+  "majority": {
+    "independent_query_count": 10,
+    "paired_seed_query_count": 50,
+    "delta_recall": -0.008696,
+    "delta_joint": 0.02,
+    "query_cluster_bootstrap_95ci_recall": [
+      -0.069565,
+      0.043478
+    ],
+    "query_cluster_bootstrap_95ci_joint": [
+      -0.04,
+      0.08
+    ],
+    "query_wins": 3,
+    "query_losses": 2,
+    "query_ties": 5,
+    "bootstrap_draws": 10000,
+    "bootstrap_seed": 2801,
+    "caveat": "Exploratory 10-query sample; seeds do not increase independent query count. Candidate selected after observing this test set: confidence intervals are descriptive, not confirmatory."
+  },
+  "max_member": {
+    "independent_query_count": 10,
+    "paired_seed_query_count": 50,
+    "delta_recall": 0.026087,
+    "delta_joint": 0.06,
+    "query_cluster_bootstrap_95ci_recall": [
+      -0.058333,
+      0.12381
+    ],
+    "query_cluster_bootstrap_95ci_joint": [
+      -0.12,
+      0.24
+    ],
+    "query_wins": 3,
+    "query_losses": 4,
+    "query_ties": 3,
+    "bootstrap_draws": 10000,
+    "bootstrap_seed": 2801,
+    "caveat": "Exploratory 10-query sample; seeds do not increase independent query count. Candidate selected after observing this test set: confidence intervals are descriptive, not confirmatory."
+  }
+}
