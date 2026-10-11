@@ -5,9 +5,10 @@ Supports BaseGRepresentative implementations (Static, Learnable Single, Learnabl
 
 from typing import List, Dict, Any, Optional, Callable, Tuple, Union
 import time
+import uuid
 import numpy as np
 from src.bitwise import BinaryVector, similarity_xor_popcount, similarity_binarized_dot, similarity_sign_cosine
-from src.blocks import AddressBlock, KnowledgeBlock, SIMILARITY_FUNCTIONS
+from src.blocks import AddressBlock, AddressState, AccessGrantToken, KnowledgeBlock, SIMILARITY_FUNCTIONS
 from src.learnable_g import BaseGRepresentative, StaticGRepresentative, LearnableSingleGRepresentative, LearnableMultiPrototypeGRepresentative, DynamicMultiPrototypeGRepresentative
 
 # Backward compatibility alias
@@ -17,7 +18,7 @@ GroupRepresentative = StaticGRepresentative
 class HierarchicalBlockNetwork:
     """
     Orchestrates Sparse Hierarchical Routing across learnable G representatives and A knowledge blocks.
-    Guarantees sparse block activation.
+    Guarantees sparse block activation and query-scoped A+ access authorization.
     """
 
     def __init__(self, groups: Optional[List[BaseGRepresentative]] = None):
@@ -37,18 +38,22 @@ class HierarchicalBlockNetwork:
         self,
         Q: BinaryVector,
         method: str = "xor",
-        group_routing_strategy: str = "dynamic_multi_label",  # "top_k", "threshold", "confidence_margin", "dynamic_multi_label"
+        group_routing_strategy: str = "dynamic_multi_label",
         group_top_k: int = 2,
         group_threshold: float = 0.50,
         confidence_margin: float = 0.08,
         min_group_confidence: float = 0.40,
         max_active_groups: int = 3,
         block_top_k: int = 1,
-        sim_func: Optional[Callable[[BinaryVector, BinaryVector], float]] = None
+        sim_func: Optional[Callable[[BinaryVector, BinaryVector], float]] = None,
+        query_id: Optional[str] = None
     ) -> Dict[str, Any]:
-        """
-        2-Level Hierarchical Routing over BaseGRepresentative instances.
-        """
+        if query_id is None:
+            query_id = f"Q_H2_{uuid.uuid4().hex[:8]}"
+
+        for b in self.flat_a_blocks:
+            b.address_block.reset_state()
+
         if sim_func is None:
             sim_func = SIMILARITY_FUNCTIONS.get(method, similarity_xor_popcount)
 
@@ -81,7 +86,6 @@ class HierarchicalBlockNetwork:
                 fallback_reason = "No group met threshold"
 
         elif group_routing_strategy == "dynamic_multi_label":
-            # Calibrated Multi-label activation: Top-1 group AND any group within relative margin up to max_active_groups
             if not g_scores:
                 active_groups = []
             else:
@@ -100,7 +104,7 @@ class HierarchicalBlockNetwork:
                 top2_score = g_scores[1][1] if len(g_scores) > 1 else 0.0
 
                 if top1_score < min_group_confidence:
-                    active_groups = g_scores  # Fallback: evaluate all groups
+                    active_groups = g_scores
                     fallback_triggered = True
                     fallback_reason = f"Low G top1 score ({top1_score:.3f} < {min_group_confidence:.3f})"
                 elif (top1_score - top2_score) < confidence_margin:
@@ -139,11 +143,24 @@ class HierarchicalBlockNetwork:
         winning_a_blocks = evaluated_a_scores[:block_top_k]
         a_select_latency = time.perf_counter() - start_a_select_time
 
-        # Step 5: Read A+ Address Blocks ONLY for winning A blocks
+        # Step 5: Read A+ Address Blocks ONLY for winning A blocks with valid tokens
         start_a_plus_time = time.perf_counter()
         accessed_a_plus_results = []
+        issued_tokens = []
+
         for a_blk, score in winning_a_blocks:
-            a_plus_data = a_blk.read_address_block()
+            a_blk.address_block.set_state(AddressState.SELECTED)
+
+            token = AccessGrantToken(
+                query_id=query_id,
+                target_block_id=a_blk.address_block.block_id,
+                token_id=f"T_H_{uuid.uuid4().hex[:8]}",
+                created_at=time.perf_counter()
+            )
+            issued_tokens.append(token)
+            a_blk.address_block.set_state(AddressState.AUTHORIZED)
+
+            a_plus_data = a_blk.read_address_block(grant_token=token)
             accessed_a_plus_results.append({
                 "block_id": a_blk.block_id,
                 "category": a_blk.category,
@@ -151,6 +168,12 @@ class HierarchicalBlockNetwork:
                 "a_plus_data": a_plus_data
             })
         a_plus_latency = time.perf_counter() - start_a_plus_time
+
+        # Revoke tokens and cleanup states
+        for t in issued_tokens:
+            t.revoke()
+        for b in self.flat_a_blocks:
+            b.address_block.reset_state()
 
         total_latency = time.perf_counter() - start_time
         total_a_in_network = len(self.flat_a_blocks) if self.flat_a_blocks else sum(len(g.member_a_blocks) for g in self.groups)
@@ -181,12 +204,15 @@ class HierarchicalBlockNetwork:
         method: str = "xor",
         top_k_per_level: int = 1,
         block_top_k: int = 1,
-        sim_func: Optional[Callable[[BinaryVector, BinaryVector], float]] = None
+        sim_func: Optional[Callable[[BinaryVector, BinaryVector], float]] = None,
+        query_id: Optional[str] = None
     ) -> Dict[str, Any]:
-        """
-        Multi-Level (3+ depth) Tree Hierarchical Routing:
-        Level 1 (Root Groups) -> Level 2 (Subgroups) -> Leaf A Blocks -> Activated A+ Blocks.
-        """
+        if query_id is None:
+            query_id = f"Q_HM_{uuid.uuid4().hex[:8]}"
+
+        for b in self.flat_a_blocks:
+            b.address_block.reset_state()
+
         if sim_func is None:
             sim_func = SIMILARITY_FUNCTIONS.get(method, similarity_xor_popcount)
 
@@ -237,8 +263,20 @@ class HierarchicalBlockNetwork:
         # Read A+ for winners
         t3 = time.perf_counter()
         accessed_a_plus_results = []
+        issued_tokens = []
         for a_blk, score in winning_a_blocks:
-            a_plus_data = a_blk.read_address_block()
+            a_blk.address_block.set_state(AddressState.SELECTED)
+
+            token = AccessGrantToken(
+                query_id=query_id,
+                target_block_id=a_blk.address_block.block_id,
+                token_id=f"T_HM_{uuid.uuid4().hex[:8]}",
+                created_at=time.perf_counter()
+            )
+            issued_tokens.append(token)
+            a_blk.address_block.set_state(AddressState.AUTHORIZED)
+
+            a_plus_data = a_blk.read_address_block(grant_token=token)
             accessed_a_plus_results.append({
                 "block_id": a_blk.block_id,
                 "category": a_blk.category,
@@ -246,6 +284,11 @@ class HierarchicalBlockNetwork:
                 "a_plus_data": a_plus_data
             })
         a_plus_read_time = time.perf_counter() - t3
+
+        for t in issued_tokens:
+            t.revoke()
+        for b in self.flat_a_blocks:
+            b.address_block.reset_state()
 
         total_latency = time.perf_counter() - start_time
 

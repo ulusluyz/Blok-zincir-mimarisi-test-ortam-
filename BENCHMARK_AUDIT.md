@@ -27,7 +27,7 @@ An independent audit of the Chain-Block codebase identified 6 critical testing f
 
 ### Issue 5: Missing Sub-system Latency Breakdown
 - **Flaw**: Performance benchmarks reported total loop time without isolating feature extraction, $A$ evaluation, $A+$ layer access, and relational graph traversal.
-- **Fix**: Implemented high-resolution sub-system latency timers (`feature_encoding_ms`, `a_evaluation_ms`, `a_plus_access_ms`, `relational_inference_ms`).
+- **Fix**: Implemented high-resolution sub-system latency timers (`feature_encoding_ms`, `a_evaluation_ms`, `candidate_selection_ms`, `a_plus_access_ms`, `relational_inference_ms`).
 
 ### Issue 6: Conflation of OOD Unknowns with In-Domain "Alakasız" Topic
 - **Flaw**: Out-of-Distribution (OOD) random strings were treated as an in-domain "Alakasız" category.

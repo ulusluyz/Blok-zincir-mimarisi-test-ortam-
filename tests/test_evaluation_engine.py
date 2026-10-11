@@ -1,11 +1,11 @@
 """
-Unit tests for Evaluation Engine and Automatic PASS/FAIL Status Computation.
+Unit tests for Evaluation Engine, AUROC Tie Handling, and Automatic PASS/FAIL Status Computation.
 """
 
 import pytest
 from src.evaluation_engine import (
-    evaluate_retrieval_metrics, evaluate_ood_metrics, calculate_latency_stats,
-    evaluate_criterion, EvaluationStatus
+    evaluate_retrieval_metrics, evaluate_ood_metrics, evaluate_access_audit_logs,
+    calculate_latency_stats, evaluate_criterion, EvaluationStatus
 )
 
 
@@ -24,9 +24,25 @@ def test_ood_metrics_calculation():
     ood = [0.42, 0.35, 0.50, 0.48]
 
     metrics = evaluate_ood_metrics(in_domain, ood, accept_threshold=0.55)
+    assert metrics["status"] == "EVALUATED"
     assert metrics["true_reject_rate"] == 100.0
     assert metrics["false_accept_rate"] == 0.0
     assert metrics["auroc"] == 100.0
+
+
+def test_auroc_tied_scores_calculation():
+    # Test tied scores between in-domain and OOD
+    in_domain = [0.80, 0.70, 0.60]
+    ood = [0.70, 0.60, 0.50]
+
+    metrics = evaluate_ood_metrics(in_domain, ood, accept_threshold=0.55)
+    assert metrics["status"] == "EVALUATED"
+    assert 0.0 <= metrics["auroc"] <= 100.0
+
+
+def test_empty_ood_sample_set_returns_not_evaluated():
+    metrics = evaluate_ood_metrics(in_domain_confidences=[0.85], ood_confidences=[])
+    assert metrics["status"] == "NOT_EVALUATED"
 
 
 def test_latency_stats():
@@ -46,3 +62,8 @@ def test_criterion_auto_pass_fail():
         "Unselected_Reads", 2.5, 0.0, "==", "Target unselected read ratio == 0%"
     )
     assert c_fail.status == EvaluationStatus.FAIL
+
+    c_not_eval = evaluate_criterion(
+        "OOD_AUROC", 0.0, 90.0, ">=", "Target AUROC >= 90%", is_evaluated=False
+    )
+    assert c_not_eval.status == EvaluationStatus.NOT_EVALUATED

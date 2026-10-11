@@ -15,14 +15,14 @@
 
 | Metric Name | Achieved Value | Target Value | Operator | Status | Rationale |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **InDomain_Top1_Accuracy** | 40.00 | 80.00 | `>=` | **FAIL** | In-domain Top-1 category accuracy >= 80% |
-| **InDomain_Top3_Accuracy** | 75.00 | 90.00 | `>=` | **FAIL** | In-domain Top-3 category accuracy >= 90% |
+| **InDomain_Top1_Accuracy** | 45.00 | 80.00 | `>=` | **FAIL** | In-domain Top-1 category accuracy >= 80% |
+| **InDomain_Top3_Accuracy** | 80.00 | 90.00 | `>=` | **FAIL** | In-domain Top-3 category accuracy >= 90% |
 | **Unseen_Negation_Disambiguation** | 100.00 | 85.00 | `>=` | **PASS** | Unseen command negation disambiguation >= 85% |
-| **Cognitive_Decision_Accuracy** | 55.17 | 80.00 | `>=` | **FAIL** | Cognitive auditor decision accuracy >= 80% |
-| **MultiHop_Transitive_Inference** | 25.00 | 90.00 | `>=` | **FAIL** | Multi-hop relational deduction accuracy >= 90% |
+| **Cognitive_Decision_Accuracy** | 62.07 | 80.00 | `>=` | **FAIL** | Cognitive auditor decision accuracy >= 80% |
+| **MultiHop_Transitive_Inference** | 50.00 | 90.00 | `>=` | **FAIL** | Multi-hop relational deduction accuracy >= 90% |
 | **OOD_True_Reject_Rate** | 0.00 | 90.00 | `>=` | **FAIL** | OOD True Reject Rate >= 90% |
 | **Unselected_APlus_Read_Ratio** | 0.00 | 0.00 | `==` | **PASS** | Unselected A+ address layer read ratio == 0% |
-| **Average_Query_Latency** | 19.86 | 50.00 | `<=` | **PASS** | Average query latency <= 50 ms |
+| **Average_Query_Latency** | 22.62 | 50.00 | `<=` | **PASS** | Average query latency <= 50 ms |
 
 ---
 

@@ -19,12 +19,10 @@ def test_inference_without_answer_chain_leakage():
     engine.add_relation("Memeli", "Hayvan", RelationType.IS_A, weight=1.0)
     engine.add_relation("Hayvan", "Canlı", RelationType.IS_A, weight=1.0)
 
-    # Autonomously extract concepts from query text without ground truth annotations
     extracted = engine.extract_concepts_from_query("Aslan canlı mıdır?")
     assert "Aslan" in extracted
     assert "Canlı" in extracted
 
-    # Run inference starting from extracted concept
     deductions = engine.find_all_deductions("Aslan", "Canlı")
     assert len(deductions) == 1
     assert deductions[0].is_valid_inference is True
@@ -47,10 +45,10 @@ def test_unauthorized_direct_a_plus_access_trap():
     assert a_plus.unauthorized_access_count == 0
 
     with pytest.raises(AddressAccessViolation):
-        a_plus.read_layer(caller_token="ILLEGAL_DIRECT_ACCESS")
+        a_plus.read_layer(grant_token=None)
 
     assert a_plus.unauthorized_access_count == 1
-    assert a_plus.access_logs[0]["status"] == "VIOLATION"
+    assert a_plus.access_logs[0]["status"] == "VIOLATION_INVALID_TOKEN_TYPE"
 
 
 def test_dataset_intent_vs_category_decoupling():
@@ -58,7 +56,6 @@ def test_dataset_intent_vs_category_decoupling():
     cmd_cases = [c for c in cases if c.expected_intent in ["COMMAND", "PROHIBITION"]]
     assert len(cmd_cases) >= 6
 
-    # Verify that command intent is decoupled from topic categories
     for c in cmd_cases:
         assert c.expected_intent in ["COMMAND", "PROHIBITION"]
 
@@ -80,7 +77,6 @@ def test_feature_extractor_split_hygiene():
     fe.fit(train_texts)
 
     test_text = single_test[0]["text"]
-    # Transforming test text must not alter fitted vocabulary size
     vocab_size_before = len(fe.vocab)
     _ = fe.transform_dense(test_text)
     assert len(fe.vocab) == vocab_size_before

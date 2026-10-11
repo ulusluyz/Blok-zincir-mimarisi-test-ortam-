@@ -21,8 +21,6 @@ def test_address_block_decoupling_and_read_count():
 
     assert a_plus_1.read_count == 0
     assert a_plus_2.read_count == 0
-    assert not a_plus_1.is_activated
-    assert not a_plus_2.is_activated
 
     Q = BinaryVector(0b11110000, bit_length=64)
     result = network.process_query(Q, method="xor", top_k=1)
@@ -32,11 +30,10 @@ def test_address_block_decoupling_and_read_count():
     assert result["unaccessed_a_plus_count"] == 1
 
     assert a_plus_1.read_count == 1
-    assert a_plus_1.is_activated is True
     assert len(a_plus_1.access_logs) == 1
+    assert a_plus_1.access_logs[0]["status"] == "AUTHORIZED_READ"
 
     assert a_plus_2.read_count == 0, "Irrelevant A+ block MUST NOT be read!"
-    assert a_plus_2.is_activated is False
     assert len(a_plus_2.access_logs) == 0
 
 
@@ -45,11 +42,11 @@ def test_unauthorized_direct_access_violation_trap():
     assert a_plus.unauthorized_access_count == 0
 
     with pytest.raises(AddressAccessViolation):
-        a_plus.read_layer(caller_token="UNAUTHORIZED_DIRECT_CALL")
+        a_plus.read_layer(grant_token=None)
 
     assert a_plus.unauthorized_access_count == 1
     assert len(a_plus.access_logs) == 1
-    assert a_plus.access_logs[0]["status"] == "VIOLATION"
+    assert a_plus.access_logs[0]["status"] == "VIOLATION_INVALID_TOKEN_TYPE"
 
 
 def test_extensibility_of_address_block():

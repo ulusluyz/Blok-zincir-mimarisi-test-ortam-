@@ -2,34 +2,37 @@
   "overall_status": "KISMEN BAŞARILI",
   "total_test_cases": 29,
   "metrics": {
-    "indomain_top1_accuracy": 40.0,
-    "indomain_top3_accuracy": 75.0,
+    "indomain_top1_accuracy": 45.0,
+    "indomain_top3_accuracy": 80.0,
     "unseen_negation_accuracy": 100.0,
-    "cognitive_decision_accuracy": 55.172413793103445,
-    "multihop_deduction_accuracy": 25.0,
-    "retrieval_mAP_at_3": 66.88034188034189,
+    "cognitive_decision_accuracy": 62.06896551724138,
+    "multihop_deduction_accuracy": 50.0,
+    "retrieval_mAP_at_3": 71.36752136752136,
     "ood_true_reject_rate": 0.0,
     "ood_false_accept_rate": 100.0,
-    "ood_auroc": 53.84615384615385,
+    "ood_auroc": 51.28205128205128,
     "unselected_a_plus_read_ratio": 0.0,
+    "unauthorized_access_attempts": 0,
+    "unauthorized_successful_reads": 0,
     "latency": {
-      "mean_ms": 19.86408665527114,
-      "median_ms": 20.21804399919347,
-      "p95_ms": 21.05396739934804,
-      "max_ms": 21.32274299947312
+      "mean_ms": 22.615820102961653,
+      "median_ms": 22.819074998551514,
+      "p95_ms": 24.212735000037355,
+      "max_ms": 24.3531170017377
     },
     "subsystem_latencies": {
-      "feature_encoding_ms": 13.777317862306894,
-      "a_evaluation_ms": 5.697471965473158,
-      "a_plus_access_ms": 0.008658448395776916,
-      "relational_inference_ms": 0.07469196554728992
+      "feature_encoding_ms": 14.283255206276502,
+      "a_evaluation_ms": 0.058711654830780204,
+      "candidate_selection_ms": 0.016394413501859224,
+      "a_plus_access_ms": 7.696781931184072,
+      "relational_inference_ms": 0.09553375902810488
     },
-    "peak_memory_mb": 2.9585275650024414
+    "peak_memory_mb": 3.001699447631836
   },
   "criteria": [
     {
       "metric_name": "InDomain_Top1_Accuracy",
-      "achieved": 40.0,
+      "achieved": 45.0,
       "target": 80.0,
       "operator": ">=",
       "status": "FAIL",
@@ -37,7 +40,7 @@
     },
     {
       "metric_name": "InDomain_Top3_Accuracy",
-      "achieved": 75.0,
+      "achieved": 80.0,
       "target": 90.0,
       "operator": ">=",
       "status": "FAIL",
@@ -53,7 +56,7 @@
     },
     {
       "metric_name": "Cognitive_Decision_Accuracy",
-      "achieved": 55.172413793103445,
+      "achieved": 62.06896551724138,
       "target": 80.0,
       "operator": ">=",
       "status": "FAIL",
@@ -61,7 +64,7 @@
     },
     {
       "metric_name": "MultiHop_Transitive_Inference",
-      "achieved": 25.0,
+      "achieved": 50.0,
       "target": 90.0,
       "operator": ">=",
       "status": "FAIL",
@@ -85,7 +88,7 @@
     },
     {
       "metric_name": "Average_Query_Latency",
-      "achieved": 19.86408665527114,
+      "achieved": 22.615820102961653,
       "target": 50.0,
       "operator": "<=",
       "status": "PASS",
@@ -98,7 +101,7 @@
       "query": "Afrika savanlarında yaşayan vahşi kedigiller",
       "expected_category": "Hayvanlar",
       "predicted_top1": "Alakasız",
-      "predicted_top1_score": 0.7265625,
+      "predicted_top1_score": 0.71875,
       "predicted_decision": "ACCEPT",
       "expected_decision": "ACCEPT"
     },
@@ -116,16 +119,7 @@
       "query": "İkinci dereceden denklem köklerini bulma",
       "expected_category": "Matematik",
       "predicted_top1": "Hayvanlar",
-      "predicted_top1_score": 0.84375,
-      "predicted_decision": "ACCEPT",
-      "expected_decision": "ACCEPT"
-    },
-    {
-      "test_id": "CB_006",
-      "query": "Özkütle ve suyun kaldırma kuvveti deneyi",
-      "expected_category": "Fizik",
-      "predicted_top1": "Biyoloji",
-      "predicted_top1_score": 0.7265625,
+      "predicted_top1_score": 0.8359375,
       "predicted_decision": "ACCEPT",
       "expected_decision": "ACCEPT"
     },
@@ -134,7 +128,7 @@
       "query": "Ekosistemdeki besin zinciri ve klorofil",
       "expected_category": "Biyoloji",
       "predicted_top1": "Elektronik",
-      "predicted_top1_score": 0.7578125,
+      "predicted_top1_score": 0.75,
       "predicted_decision": "ACCEPT",
       "expected_decision": "ACCEPT"
     },
@@ -143,7 +137,7 @@
       "query": "Kadeş antlaşması tarihteki ilk yazılı barış metni",
       "expected_category": "Tarih",
       "predicted_top1": "Fizik",
-      "predicted_top1_score": 0.75,
+      "predicted_top1_score": 0.7578125,
       "predicted_decision": "ACCEPT",
       "expected_decision": "ACCEPT"
     },
@@ -152,8 +146,8 @@
       "query": "Tasavvuf edebiyatında Yunus Emre ilahileri",
       "expected_category": "Edebiyat",
       "predicted_top1": "Hayvanlar",
-      "predicted_top1_score": 0.703125,
-      "predicted_decision": "ÇELİŞKİLİ_KANIT",
+      "predicted_top1_score": 0.7265625,
+      "predicted_decision": "ACCEPT",
       "expected_decision": "ACCEPT"
     },
     {
@@ -179,7 +173,7 @@
       "query": "Aslan hücresel organizma mıdır?",
       "expected_category": "Hayvanlar",
       "predicted_top1": "Matematik",
-      "predicted_top1_score": 0.8515625,
+      "predicted_top1_score": 0.8359375,
       "predicted_decision": "ACCEPT",
       "expected_decision": "ACCEPT"
     },
@@ -197,7 +191,7 @@
       "query": "Quark galaksi kümesi oluşturur mu?",
       "expected_category": "Fizik",
       "predicted_top1": "Elektronik",
-      "predicted_top1_score": 0.8125,
+      "predicted_top1_score": 0.8203125,
       "predicted_decision": "ACCEPT",
       "expected_decision": "ACCEPT"
     }

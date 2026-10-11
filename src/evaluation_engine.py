@@ -4,8 +4,8 @@ Automated PASS/FAIL Evaluation, Calibration, and Metric Calculation Engine.
 Calculates:
 1. Single & Multi-Topic Retrieval: Precision@k, Recall@k, mAP@k, Exact Set Match.
 2. True Out-Of-Distribution (OOD) Rejection: TRR, FAR, AUROC, AUPRC.
-3. Sub-system Latency Breakdown (Mean, Median, P95, Max ms).
-4. Unselected A+ Read Isolation Ratio (Target = 0.00%).
+3. Query-Scoped Access Audit: Unselected A+ Read Violations & Unauthorized Access Traps.
+4. Sub-system Latency Breakdown (Mean, Median, P95, Max ms).
 5. Light Baseline Comparisons (Keyword Matching, Random LSH, Naive Bayes).
 6. Automated PASS / FAIL / NOT_EVALUATED status computation based on predefined target criteria.
 """
@@ -73,7 +73,6 @@ def evaluate_retrieval_metrics(
         ap = ap_sum / min(len(gt), k) if gt else 0.0
         average_precisions.append(ap)
 
-        # Exact Match
         if set(preds_k) == gt:
             exact_matches += 1
 
@@ -89,39 +88,92 @@ def evaluate_ood_metrics(
     in_domain_confidences: List[float],
     ood_confidences: List[float],
     accept_threshold: float = 0.55
-) -> Dict[str, float]:
+) -> Dict[str, Any]:
     """
-    Evaluates True Reject Rate (TRR), False Accept Rate (FAR), AUROC, and AUPRC.
+    Evaluates True Reject Rate (TRR), False Accept Rate (FAR), AUROC with tie handling.
+    Returns NOT_EVALUATED status if sample counts are insufficient.
     """
-    # True Reject Rate: Fraction of OOD queries with confidence < threshold
-    true_rejects = sum(1 for conf in ood_confidences if conf < accept_threshold)
-    trr = (true_rejects / len(ood_confidences)) * 100.0 if ood_confidences else 100.0
-
-    # False Accept Rate: Fraction of OOD queries with confidence >= threshold
-    false_accepts = sum(1 for conf in ood_confidences if conf >= accept_threshold)
-    far = (false_accepts / len(ood_confidences)) * 100.0 if ood_confidences else 0.0
-
-    # Simplified AUROC calculation
-    all_scores = [(s, 1) for s in in_domain_confidences] + [(s, 0) for s in ood_confidences]
-    all_scores.sort(key=lambda x: x[0], reverse=True)
-
     n_pos = len(in_domain_confidences)
     n_neg = len(ood_confidences)
 
-    if n_pos == 0 or n_neg == 0:
-        auroc = 1.0
-    else:
-        rank_sum = 0
-        for rank, (score, label) in enumerate(all_scores, 1):
-            if label == 1:
-                # Rank 1 is highest score, so inverted rank = total - rank + 1
-                rank_sum += (len(all_scores) - rank + 1)
-        auroc = (rank_sum - (n_pos * (n_pos + 1)) / 2.0) / (n_pos * n_neg)
+    if n_pos < 1 or n_neg < 1:
+        return {
+            "status": "NOT_EVALUATED",
+            "true_reject_rate": 0.0,
+            "false_accept_rate": 0.0,
+            "auroc": 0.0
+        }
+
+    # True Reject Rate: Fraction of OOD queries with confidence < threshold
+    true_rejects = sum(1 for conf in ood_confidences if conf < accept_threshold)
+    trr = (true_rejects / n_neg) * 100.0
+
+    # False Accept Rate: Fraction of OOD queries with confidence >= threshold
+    false_accepts = sum(1 for conf in ood_confidences if conf >= accept_threshold)
+    far = (false_accepts / n_neg) * 100.0
+
+    # AUROC calculation with tie handling (Mann-Whitney U statistic)
+    all_scores = [(s, 1) for s in in_domain_confidences] + [(s, 0) for s in ood_confidences]
+    # Sort by score ascending to compute ranks
+    all_scores.sort(key=lambda x: x[0])
+
+    # Assign average ranks for tied scores
+    ranks = [0.0] * len(all_scores)
+    i = 0
+    while i < len(all_scores):
+        j = i
+        while j < len(all_scores) and math.isclose(all_scores[j][0], all_scores[i][0], abs_tol=1e-7):
+            j += 1
+        avg_rank = (i + 1 + j) / 2.0
+        for k_idx in range(i, j):
+            ranks[k_idx] = avg_rank
+        i = j
+
+    pos_rank_sum = sum(ranks[k_idx] for k_idx, (_, label) in enumerate(all_scores) if label == 1)
+    u_stat = pos_rank_sum - (n_pos * (n_pos + 1)) / 2.0
+    auroc = u_stat / (n_pos * n_neg)
 
     return {
+        "status": "EVALUATED",
         "true_reject_rate": trr,
         "false_accept_rate": far,
-        "auroc": float(auroc) * 100.0
+        "auroc": float(np.clip(auroc, 0.0, 1.0)) * 100.0
+    }
+
+
+def evaluate_access_audit_logs(query_audits: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Evaluates per-query selection logs to detect unselected A+ read violations.
+    """
+    if not query_audits:
+        return {
+            "status": "NOT_EVALUATED",
+            "total_queries": 0,
+            "unauthorized_attempts": 0,
+            "unauthorized_successful_reads": 0,
+            "unselected_a_plus_read_ratio": 0.0
+        }
+
+    total_queries = len(query_audits)
+    unauthorized_attempts = sum(a.get("unauthorized_attempts", 0) for a in query_audits)
+    unauthorized_successful_reads = 0
+
+    for a in query_audits:
+        selected_set = set(a.get("selected_block_ids", []))
+        read_list = a.get("read_block_ids", [])
+        for r_id in read_list:
+            if r_id not in selected_set:
+                unauthorized_successful_reads += 1
+
+    total_a_plus_reads = sum(a.get("a_plus_read_count", 0) for a in query_audits)
+    violation_ratio = (unauthorized_successful_reads / total_a_plus_reads) * 100.0 if total_a_plus_reads > 0 else 0.0
+
+    return {
+        "status": "EVALUATED",
+        "total_queries": total_queries,
+        "unauthorized_attempts": unauthorized_attempts,
+        "unauthorized_successful_reads": unauthorized_successful_reads,
+        "unselected_a_plus_read_ratio": violation_ratio
     }
 
 
@@ -141,11 +193,22 @@ def evaluate_criterion(
     achieved: float,
     target: float,
     op: str,
-    rationale: str
+    rationale: str,
+    is_evaluated: bool = True
 ) -> BenchmarkCriterion:
     """
-    Automatically evaluates PASS or FAIL status based on target condition.
+    Automatically evaluates PASS, FAIL, or NOT_EVALUATED status based on target condition.
     """
+    if not is_evaluated:
+        return BenchmarkCriterion(
+            metric_name=metric_name,
+            achieved_value=0.0,
+            target_value=target,
+            comparison_operator=op,
+            status=EvaluationStatus.NOT_EVALUATED,
+            rationale=f"Insufficient evidence or missing dataset for {metric_name}."
+        )
+
     if op == ">=":
         passed = achieved >= target
     elif op == "<=":
