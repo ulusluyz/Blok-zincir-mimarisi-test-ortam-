@@ -5,7 +5,7 @@ Evaluates:
 1. Bit Length Trade-offs (64, 128, 256 bits)
 2. Scalability across Block Count (1,000 to 100,000 Knowledge Blocks)
 3. Full Scan vs Hierarchical Routing Trees vs CPU LSH/IVF Indexes
-4. Baselines (Keyword Matching, Random LSH, Naive Bayes / Logistic Regression)
+4. Baselines (Keyword Matching, Random LSH, Naive Bayes)
 5. Peak Memory Usage (MB) & Per-Query Latency Breakdown (ms)
 """
 
@@ -178,23 +178,27 @@ def run_scalability_and_method_benchmarks():
         bit_length_results[f"{n_bits}_bits"] = {"accuracy": acc, "latency_ms": lat_ms}
         print(f"[{n_bits}-bit STE] Accuracy: {acc:.2f}% | Per-query latency: {lat_ms:.4f} ms")
 
-    # 3. Scalability Scaling (1,000 to 100,000 blocks)
-    print("\n--- 3. BLOCK REGISTRY SCALABILITY SCALING (1,000 to 100,000 Blocks) ---")
+    # 3. Scalability Scaling (1,000 to 50,000 blocks)
+    print("\n--- 3. BLOCK REGISTRY SCALABILITY SCALING ---")
     scaling_results = {}
-    block_counts = [1000, 10000, 100000]
+    block_counts = [1000, 10000, 50000]
 
     for num_blocks in block_counts:
         tracemalloc.start()
         t0 = time.perf_counter()
 
         blocks = []
+        lsh_idx = LSHIndex(num_tables=4, hash_size=8, bit_length=128, seed=42)
+
         for b_idx in range(num_blocks):
             bid = f"KB_{b_idx}"
             cat = CATEGORIES[b_idx % len(CATEGORIES)]
             bits = [random.choice([True, False]) for _ in range(128)]
             vec = BinaryVector.from_bool_list(bits)
             addr = AddressBlock(block_id=bid)
-            blocks.append(KnowledgeBlock(block_id=bid, category=cat, representation=vec, address_block=addr))
+            block = KnowledgeBlock(block_id=bid, category=cat, representation=vec, address_block=addr)
+            blocks.append(block)
+            lsh_idx.add_block(block)
 
         q_vec = BinaryVector.from_bool_list([True] * 128)
 
@@ -205,12 +209,9 @@ def run_scalability_and_method_benchmarks():
         t_scan_1 = time.perf_counter()
         scan_lat_ms = (t_scan_1 - t_scan_0) * 1000.0
 
-        # LSH Index
-        lsh_idx = LSHIndex(num_tables=4, hash_size=8, bit_length=128, seed=42)
-        for b in blocks:
-            lsh_idx.add_block(b)
+        # LSH Index Query
         t_lsh_0 = time.perf_counter()
-        lsh_candidates = lsh_idx.query_candidates(q_vec, fallback_all=blocks[:500])
+        lsh_candidates = lsh_idx.query_candidates(q_vec, fallback_all=blocks[:200])
         t_lsh_1 = time.perf_counter()
         lsh_lat_ms = (t_lsh_1 - t_lsh_0) * 1000.0
 

@@ -8,7 +8,7 @@ import time
 import uuid
 import numpy as np
 from src.bitwise import BinaryVector, similarity_xor_popcount, similarity_binarized_dot, similarity_sign_cosine
-from src.blocks import AddressBlock, AddressState, AccessGrantToken, KnowledgeBlock, SIMILARITY_FUNCTIONS
+from src.blocks import AddressBlock, AddressState, AccessGrantToken, AccessGrantManager, KnowledgeBlock, SIMILARITY_FUNCTIONS
 from src.learnable_g import BaseGRepresentative, StaticGRepresentative, LearnableSingleGRepresentative, LearnableMultiPrototypeGRepresentative, DynamicMultiPrototypeGRepresentative
 
 # Backward compatibility alias
@@ -18,12 +18,13 @@ GroupRepresentative = StaticGRepresentative
 class HierarchicalBlockNetwork:
     """
     Orchestrates Sparse Hierarchical Routing across learnable G representatives and A knowledge blocks.
-    Guarantees sparse block activation and query-scoped A+ access authorization.
+    Guarantees sparse block activation and query-scoped A+ access authorization via AccessGrantManager.
     """
 
-    def __init__(self, groups: Optional[List[BaseGRepresentative]] = None):
+    def __init__(self, groups: Optional[List[BaseGRepresentative]] = None, grant_manager: Optional[AccessGrantManager] = None):
         self.groups: List[BaseGRepresentative] = groups if groups is not None else []
         self.flat_a_blocks: List[KnowledgeBlock] = []
+        self.grant_manager = grant_manager if grant_manager is not None else AccessGrantManager()
 
     def add_group(self, group: BaseGRepresentative):
         self.groups.append(group)
@@ -148,32 +149,29 @@ class HierarchicalBlockNetwork:
         accessed_a_plus_results = []
         issued_tokens = []
 
-        for a_blk, score in winning_a_blocks:
-            a_blk.address_block.set_state(AddressState.SELECTED)
+        try:
+            for a_blk, score in winning_a_blocks:
+                a_blk.address_block.set_state(AddressState.SELECTED)
 
-            token = AccessGrantToken(
-                query_id=query_id,
-                target_block_id=a_blk.address_block.block_id,
-                token_id=f"T_H_{uuid.uuid4().hex[:8]}",
-                created_at=time.perf_counter()
-            )
-            issued_tokens.append(token)
-            a_blk.address_block.set_state(AddressState.AUTHORIZED)
+                token = self.grant_manager.issue_grant(query_id=query_id, target_block_id=a_blk.address_block.block_id)
+                issued_tokens.append(token)
+                a_blk.address_block.set_state(AddressState.AUTHORIZED)
 
-            a_plus_data = a_blk.read_address_block(grant_token=token)
-            accessed_a_plus_results.append({
-                "block_id": a_blk.block_id,
-                "category": a_blk.category,
-                "score": score,
-                "a_plus_data": a_plus_data
-            })
+                a_plus_data = a_blk.read_address_block(grant_token=token, grant_manager=self.grant_manager)
+                accessed_a_plus_results.append({
+                    "block_id": a_blk.block_id,
+                    "category": a_blk.category,
+                    "score": score,
+                    "a_plus_data": a_plus_data
+                })
+        finally:
+            for t in issued_tokens:
+                t.revoke()
+            for b in self.flat_a_blocks:
+                if b.address_block.current_state != AddressState.NOT_SELECTED:
+                    b.address_block.set_state(AddressState.CLOSED)
+
         a_plus_latency = time.perf_counter() - start_a_plus_time
-
-        # Revoke tokens and cleanup states
-        for t in issued_tokens:
-            t.revoke()
-        for b in self.flat_a_blocks:
-            b.address_block.reset_state()
 
         total_latency = time.perf_counter() - start_time
         total_a_in_network = len(self.flat_a_blocks) if self.flat_a_blocks else sum(len(g.member_a_blocks) for g in self.groups)
@@ -264,31 +262,29 @@ class HierarchicalBlockNetwork:
         t3 = time.perf_counter()
         accessed_a_plus_results = []
         issued_tokens = []
-        for a_blk, score in winning_a_blocks:
-            a_blk.address_block.set_state(AddressState.SELECTED)
+        try:
+            for a_blk, score in winning_a_blocks:
+                a_blk.address_block.set_state(AddressState.SELECTED)
 
-            token = AccessGrantToken(
-                query_id=query_id,
-                target_block_id=a_blk.address_block.block_id,
-                token_id=f"T_HM_{uuid.uuid4().hex[:8]}",
-                created_at=time.perf_counter()
-            )
-            issued_tokens.append(token)
-            a_blk.address_block.set_state(AddressState.AUTHORIZED)
+                token = self.grant_manager.issue_grant(query_id=query_id, target_block_id=a_blk.address_block.block_id)
+                issued_tokens.append(token)
+                a_blk.address_block.set_state(AddressState.AUTHORIZED)
 
-            a_plus_data = a_blk.read_address_block(grant_token=token)
-            accessed_a_plus_results.append({
-                "block_id": a_blk.block_id,
-                "category": a_blk.category,
-                "score": score,
-                "a_plus_data": a_plus_data
-            })
+                a_plus_data = a_blk.read_address_block(grant_token=token, grant_manager=self.grant_manager)
+                accessed_a_plus_results.append({
+                    "block_id": a_blk.block_id,
+                    "category": a_blk.category,
+                    "score": score,
+                    "a_plus_data": a_plus_data
+                })
+        finally:
+            for t in issued_tokens:
+                t.revoke()
+            for b in self.flat_a_blocks:
+                if b.address_block.current_state != AddressState.NOT_SELECTED:
+                    b.address_block.set_state(AddressState.CLOSED)
+
         a_plus_read_time = time.perf_counter() - t3
-
-        for t in issued_tokens:
-            t.revoke()
-        for b in self.flat_a_blocks:
-            b.address_block.reset_state()
 
         total_latency = time.perf_counter() - start_time
 

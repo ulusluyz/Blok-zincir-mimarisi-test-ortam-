@@ -7,12 +7,14 @@ Includes software-level access state machine and query-scoped authorization toke
 Note: Explicitly bounded as a Software Reference Isolation Guarantee (OS/User Space Software Logic), not a DRAM hardware-bus physical isolation.
 """
 
-from typing import List, Dict, Any, Optional, Callable, Tuple
+from typing import List, Dict, Any, Optional, Callable, Tuple, Set
 from dataclasses import dataclass
 from enum import Enum
 import time
 import inspect
 import uuid
+import hmac
+import hashlib
 from src.bitwise import BinaryVector, similarity_xor_popcount, similarity_binarized_dot, similarity_sign_cosine
 
 
@@ -24,16 +26,59 @@ class AddressState(Enum):
     CLOSED = "CLOSED"
 
 
+# Allowed state machine transitions
+VALID_STATE_TRANSITIONS: Dict[AddressState, Set[AddressState]] = {
+    AddressState.NOT_SELECTED: {AddressState.SELECTED, AddressState.CLOSED},
+    AddressState.SELECTED: {AddressState.AUTHORIZED, AddressState.NOT_SELECTED, AddressState.CLOSED},
+    AddressState.AUTHORIZED: {AddressState.READ, AddressState.CLOSED},
+    AddressState.READ: {AddressState.CLOSED, AddressState.NOT_SELECTED},
+    AddressState.CLOSED: {AddressState.NOT_SELECTED, AddressState.SELECTED}
+}
+
+
 @dataclass
 class AccessGrantToken:
     query_id: str
     target_block_id: str
     token_id: str
     created_at: float
+    signature: str
+    is_used: bool = False
     is_closed: bool = False
 
     def revoke(self):
         self.is_closed = True
+
+
+class AccessGrantManager:
+    """
+    Session Token Factory: Issues and verifies HMAC-signed query-scoped AccessGrantToken objects.
+    Prevents forging, spoofing, cross-block, or cross-query token transfer.
+    """
+
+    def __init__(self, secret_key: Optional[bytes] = None):
+        self._secret_key = secret_key if secret_key is not None else uuid.uuid4().bytes
+
+    def issue_grant(self, query_id: str, target_block_id: str) -> AccessGrantToken:
+        token_id = f"T_{uuid.uuid4().hex[:8]}"
+        created_at = time.perf_counter()
+        payload_bytes = f"{query_id}:{target_block_id}:{token_id}:{created_at:.6f}".encode('utf-8')
+        signature = hmac.new(self._secret_key, payload_bytes, hashlib.sha256).hexdigest()
+
+        return AccessGrantToken(
+            query_id=query_id,
+            target_block_id=target_block_id,
+            token_id=token_id,
+            created_at=created_at,
+            signature=signature
+        )
+
+    def verify_grant(self, token: AccessGrantToken) -> bool:
+        if not isinstance(token, AccessGrantToken):
+            return False
+        payload_bytes = f"{token.query_id}:{token.target_block_id}:{token.token_id}:{token.created_at:.6f}".encode('utf-8')
+        expected_signature = hmac.new(self._secret_key, payload_bytes, hashlib.sha256).hexdigest()
+        return hmac.compare_digest(expected_signature, token.signature)
 
 
 class AddressAccessViolation(Exception):
@@ -62,39 +107,73 @@ class AddressBlock:
         return self.current_state == AddressState.READ
 
     def add_connection(self, target_id: str, weight: float = 1.0):
-        """Extensible: new connections can be added without changing fixed A block size."""
         self._connections[target_id] = weight
 
     def set_state(self, new_state: AddressState):
+        valid_next = VALID_STATE_TRANSITIONS.get(self.current_state, set())
+        if new_state not in valid_next and new_state != self.current_state:
+            raise AddressAccessViolation(
+                f"Invalid state transition on block '{self.block_id}': Cannot transition from {self.current_state.value} to {new_state.value}!"
+            )
         self.current_state = new_state
 
     def reset_state(self):
         self.current_state = AddressState.NOT_SELECTED
 
-    def read_layer(self, grant_token: Optional[AccessGrantToken] = None) -> Dict[str, Any]:
+    def read_layer(self, grant_token: Optional[AccessGrantToken] = None, grant_manager: Optional[AccessGrantManager] = None) -> Dict[str, Any]:
         """
         Accesses connection layer and returns payload & connections.
-        Requires a valid, active query-scoped AccessGrantToken matching self.block_id.
+        Requires a valid, signed AccessGrantToken matching self.block_id and grant_manager verification.
         Raises AddressAccessViolation on any state machine or token violation.
         """
         caller_frame = inspect.stack()[1]
 
-        # 1. Token Type Check
+        # 1. Token Object Verification
         if not isinstance(grant_token, AccessGrantToken):
             self.unauthorized_access_count += 1
             self.access_logs.append({
                 "timestamp": time.perf_counter(),
-                "query_id": grant_token.query_id if hasattr(grant_token, "query_id") else "UNKNOWN",
+                "query_id": getattr(grant_token, "query_id", "UNKNOWN"),
                 "status": "VIOLATION_INVALID_TOKEN_TYPE",
                 "caller_function": caller_frame.function,
                 "caller_filename": caller_frame.filename,
                 "read_count": self.read_count
             })
             raise AddressAccessViolation(
-                f"Unauthorized access attempt on A+ block '{self.block_id}': Invalid or legacy token provided!"
+                f"Unauthorized access attempt on A+ block '{self.block_id}': Invalid or forged token provided!"
             )
 
-        # 2. Token Revocation / Expiration Check
+        # 2. Cryptographic Signature Verification
+        if grant_manager is None or not grant_manager.verify_grant(grant_token):
+            self.unauthorized_access_count += 1
+            self.access_logs.append({
+                "timestamp": time.perf_counter(),
+                "query_id": grant_token.query_id,
+                "status": "VIOLATION_FORGED_SIGNATURE",
+                "caller_function": caller_frame.function,
+                "caller_filename": caller_frame.filename,
+                "read_count": self.read_count
+            })
+            raise AddressAccessViolation(
+                f"Unauthorized access attempt on A+ block '{self.block_id}': Token HMAC signature verification failed!"
+            )
+
+        # 3. Token Single-Use / Double-Spend Check
+        if grant_token.is_used:
+            self.unauthorized_access_count += 1
+            self.access_logs.append({
+                "timestamp": time.perf_counter(),
+                "query_id": grant_token.query_id,
+                "status": "VIOLATION_TOKEN_DOUBLE_SPEND",
+                "caller_function": caller_frame.function,
+                "caller_filename": caller_frame.filename,
+                "read_count": self.read_count
+            })
+            raise AddressAccessViolation(
+                f"Unauthorized access attempt on A+ block '{self.block_id}': Grant token already consumed (double spend attempt)!"
+            )
+
+        # 4. Token Revocation Check
         if grant_token.is_closed:
             self.unauthorized_access_count += 1
             self.access_logs.append({
@@ -106,10 +185,10 @@ class AddressBlock:
                 "read_count": self.read_count
             })
             raise AddressAccessViolation(
-                f"Unauthorized access attempt on A+ block '{self.block_id}': AccessGrantToken for query '{grant_token.query_id}' is expired or closed!"
+                f"Unauthorized access attempt on A+ block '{self.block_id}': AccessGrantToken for query '{grant_token.query_id}' is closed!"
             )
 
-        # 3. Target Block ID Binding Check
+        # 5. Target Block Binding Check
         if grant_token.target_block_id != self.block_id:
             self.unauthorized_access_count += 1
             self.access_logs.append({
@@ -124,8 +203,8 @@ class AddressBlock:
                 f"Unauthorized access attempt on A+ block '{self.block_id}': Grant token was issued for block '{grant_token.target_block_id}'!"
             )
 
-        # 4. State Machine Transition Check
-        if self.current_state not in [AddressState.SELECTED, AddressState.AUTHORIZED]:
+        # 6. State Machine Enforcement Check (Disallow SELECTED directly; requires AUTHORIZED)
+        if self.current_state != AddressState.AUTHORIZED:
             self.unauthorized_access_count += 1
             self.access_logs.append({
                 "timestamp": time.perf_counter(),
@@ -136,10 +215,11 @@ class AddressBlock:
                 "read_count": self.read_count
             })
             raise AddressAccessViolation(
-                f"Unauthorized access attempt on A+ block '{self.block_id}': Block state is '{self.current_state.value}', expected SELECTED or AUTHORIZED!"
+                f"Unauthorized access attempt on A+ block '{self.block_id}': Block state is '{self.current_state.value}', expected AUTHORIZED!"
             )
 
         # Authorized Access Successful
+        grant_token.is_used = True
         self.current_state = AddressState.READ
         self.read_count += 1
 
@@ -183,9 +263,9 @@ class KnowledgeBlock:
         self.evaluation_count += 1
         return sim_func(self.representation, Q)
 
-    def read_address_block(self, grant_token: Optional[AccessGrantToken] = None) -> Dict[str, Any]:
-        """Triggers access to A+ connection layer upon activation using grant_token."""
-        return self.address_block.read_layer(grant_token=grant_token)
+    def read_address_block(self, grant_token: Optional[AccessGrantToken] = None, grant_manager: Optional[AccessGrantManager] = None) -> Dict[str, Any]:
+        """Triggers access to A+ connection layer upon activation using grant_token and grant_manager."""
+        return self.address_block.read_layer(grant_token=grant_token, grant_manager=grant_manager)
 
 
 SIMILARITY_FUNCTIONS = {
@@ -198,11 +278,12 @@ SIMILARITY_FUNCTIONS = {
 class BlockNetwork:
     """
     Orchestrates evaluation and routing across A Knowledge Blocks and selective reading of A+ Address Blocks.
-    Does NOT scan or maintain a monolithic central routing table for connections.
+    Enforces cryptographically verified grant token issuance and state machine cleanup via try...finally.
     """
 
-    def __init__(self, blocks: Optional[List[KnowledgeBlock]] = None):
+    def __init__(self, blocks: Optional[List[KnowledgeBlock]] = None, grant_manager: Optional[AccessGrantManager] = None):
         self.blocks: List[KnowledgeBlock] = blocks if blocks is not None else []
+        self.grant_manager = grant_manager if grant_manager is not None else AccessGrantManager()
         self.last_query_audit: Dict[str, Any] = {}
 
     def add_block(self, block: KnowledgeBlock):
@@ -257,41 +338,40 @@ class BlockNetwork:
         read_block_ids = []
         issued_tokens = []
 
-        for block, score in active_blocks:
-            selected_block_ids.append(block.block_id)
-            block.address_block.set_state(AddressState.SELECTED)
+        try:
+            for block, score in active_blocks:
+                selected_block_ids.append(block.block_id)
+                block.address_block.set_state(AddressState.SELECTED)
 
-            # Issue query-scoped AccessGrantToken matching block.address_block.block_id
-            token = AccessGrantToken(
-                query_id=query_id,
-                target_block_id=block.address_block.block_id,
-                token_id=f"T_{uuid.uuid4().hex[:8]}",
-                created_at=time.perf_counter()
-            )
-            issued_tokens.append(token)
-            block.address_block.set_state(AddressState.AUTHORIZED)
-            authorized_block_ids.append(block.block_id)
+                # Issue HMAC-signed AccessGrantToken from AccessGrantManager
+                token = self.grant_manager.issue_grant(query_id=query_id, target_block_id=block.address_block.block_id)
+                issued_tokens.append(token)
 
-            a_plus_data = block.read_address_block(grant_token=token)
-            read_block_ids.append(block.block_id)
+                block.address_block.set_state(AddressState.AUTHORIZED)
+                authorized_block_ids.append(block.block_id)
 
-            accessed_a_plus_results.append({
-                "block_id": block.block_id,
-                "category": block.category,
-                "score": score,
-                "a_plus_data": a_plus_data
-            })
+                a_plus_data = block.read_address_block(grant_token=token, grant_manager=self.grant_manager)
+                read_block_ids.append(block.block_id)
+
+                accessed_a_plus_results.append({
+                    "block_id": block.block_id,
+                    "category": block.category,
+                    "score": score,
+                    "a_plus_data": a_plus_data
+                })
+        finally:
+            # Guaranteed session cleanup in try...finally block!
+            for token in issued_tokens:
+                token.revoke()
+
+            for b in self.blocks:
+                if b.block_id in selected_block_ids:
+                    if b.address_block.current_state in [AddressState.READ, AddressState.AUTHORIZED, AddressState.SELECTED]:
+                        b.address_block.set_state(AddressState.CLOSED)
+                else:
+                    b.address_block.reset_state()
+
         read_latency = time.perf_counter() - start_read_time
-
-        # Cleanup: Revoke issued tokens and transition block states to CLOSED
-        for token in issued_tokens:
-            token.revoke()
-
-        for b in self.blocks:
-            if b.block_id in selected_block_ids:
-                b.address_block.set_state(AddressState.CLOSED)
-            else:
-                b.address_block.reset_state()
 
         # Audit Record
         unauthorized_attempts = sum(b.address_block.unauthorized_access_count for b in self.blocks)

@@ -2,16 +2,16 @@
 
 ## 1. Detailed Failure Case Log
 - **[CB_003]** Query: 'Afrika savanlarında yaşayan vahşi kedigiller' | Expected Cat: `Hayvanlar` | Predicted: `Alakasız` (Score: 0.7188) | Decision: `ACCEPT` (Expected: `ACCEPT`)
-- **[CB_004]** Query: 'Lehim havyası ve pasta ile devre kartı tamiri' | Expected Cat: `Elektronik` | Predicted: `Alakasız` (Score: 0.7344) | Decision: `ÇELİŞKİLİ_KANIT` (Expected: `ACCEPT`)
-- **[CB_005]** Query: 'İkinci dereceden denklem köklerini bulma' | Expected Cat: `Matematik` | Predicted: `Hayvanlar` (Score: 0.8359) | Decision: `ACCEPT` (Expected: `ACCEPT`)
-- **[CB_007]** Query: 'Ekosistemdeki besin zinciri ve klorofil' | Expected Cat: `Biyoloji` | Predicted: `Elektronik` (Score: 0.7500) | Decision: `ACCEPT` (Expected: `ACCEPT`)
-- **[CB_008]** Query: 'Kadeş antlaşması tarihteki ilk yazılı barış metni' | Expected Cat: `Tarih` | Predicted: `Fizik` (Score: 0.7578) | Decision: `ACCEPT` (Expected: `ACCEPT`)
-- **[CB_009]** Query: 'Tasavvuf edebiyatında Yunus Emre ilahileri' | Expected Cat: `Edebiyat` | Predicted: `Hayvanlar` (Score: 0.7266) | Decision: `ACCEPT` (Expected: `ACCEPT`)
+- **[CB_004]** Query: 'Lehim havyası ve pasta ile devre kartı tamiri' | Expected Cat: `Elektronik` | Predicted: `Alakasız` (Score: 0.7344) | Decision: `ACCEPT` (Expected: `ACCEPT`)
+- **[CB_005]** Query: 'İkinci dereceden denklem köklerini bulma' | Expected Cat: `Matematik` | Predicted: `Hayvanlar` (Score: 0.8516) | Decision: `ACCEPT` (Expected: `ACCEPT`)
+- **[CB_007]** Query: 'Ekosistemdeki besin zinciri ve klorofil' | Expected Cat: `Biyoloji` | Predicted: `Elektronik` (Score: 0.7578) | Decision: `ACCEPT` (Expected: `ACCEPT`)
+- **[CB_008]** Query: 'Kadeş antlaşması tarihteki ilk yazılı barış metni' | Expected Cat: `Tarih` | Predicted: `Fizik` (Score: 0.7422) | Decision: `ACCEPT` (Expected: `ACCEPT`)
+- **[CB_009]** Query: 'Tasavvuf edebiyatında Yunus Emre ilahileri' | Expected Cat: `Edebiyat` | Predicted: `Hayvanlar` (Score: 0.7031) | Decision: `ÇELİŞKİLİ_KANIT` (Expected: `ACCEPT`)
 - **[CB_010]** Query: 'Pazar günleri sahil kenarında yürüyüş yapmak' | Expected Cat: `Alakasız` | Predicted: `Biyoloji` (Score: 0.7109) | Decision: `ACCEPT` (Expected: `ACCEPT`)
 - **[CB_NEG_006]** Query: 'Radyonun sesini yükseltme' | Expected Cat: `Elektronik` | Predicted: `Alakasız` (Score: 1.0000) | Decision: `ÇELİŞKİLİ_KANIT` (Expected: `ACCEPT`)
 - **[CB_HOP_3]** Query: 'Aslan hücresel organizma mıdır?' | Expected Cat: `Hayvanlar` | Predicted: `Matematik` (Score: 0.8359) | Decision: `ACCEPT` (Expected: `ACCEPT`)
 - **[CB_HOP_4]** Query: 'Güneş enerjisi kütleye dönüşür mü?' | Expected Cat: `Biyoloji` | Predicted: `Elektronik` (Score: 0.8359) | Decision: `ACCEPT` (Expected: `ACCEPT`)
-- **[CB_HOP_5]** Query: 'Quark galaksi kümesi oluşturur mu?' | Expected Cat: `Fizik` | Predicted: `Elektronik` (Score: 0.8203) | Decision: `ACCEPT` (Expected: `ACCEPT`)
+- **[CB_HOP_5]** Query: 'Quark galaksi kümesi oluşturur mu?' | Expected Cat: `Fizik` | Predicted: `Elektronik` (Score: 0.8125) | Decision: `ACCEPT` (Expected: `ACCEPT`)
 
 ---
 

@@ -2,52 +2,52 @@
   "baselines": {
     "keyword_matching": {
       "accuracy": 30.0,
-      "avg_latency_ms": 0.008345399874087889
+      "avg_latency_ms": 0.008253000123659149
     },
     "random_lsh": {
-      "accuracy": 30.0,
-      "avg_latency_ms": 6.1268449999261065
+      "accuracy": 40.0,
+      "avg_latency_ms": 2.9707916000916157
     },
     "naive_bayes": {
       "accuracy": 30.0,
-      "avg_latency_ms": 0.4497425999943516
+      "avg_latency_ms": 0.24438399996142837
     }
   },
   "bit_length_comparison": {
     "64_bits": {
-      "accuracy": 40.0,
-      "latency_ms": 1.6778599998360733
+      "accuracy": 50.0,
+      "latency_ms": 1.7025863999151625
     },
     "128_bits": {
       "accuracy": 30.0,
-      "latency_ms": 3.1520827000349527
+      "latency_ms": 3.199141599907307
     },
     "256_bits": {
       "accuracy": 30.0,
-      "latency_ms": 6.0933213999305735
+      "latency_ms": 7.9854562998661995
     }
   },
   "scalability_scaling": {
     "1000_blocks": {
       "num_blocks": 1000,
-      "full_scan_latency_ms": 2.13024500044412,
-      "lsh_index_latency_ms": 1.015308998830733,
-      "search_space_pruning_pct": 97.89999999999999,
-      "peak_memory_mb": 0.8172674179077148
+      "full_scan_latency_ms": 2.2969440033193678,
+      "lsh_index_latency_ms": 0.8268689998658374,
+      "search_space_pruning_pct": 98.8,
+      "peak_memory_mb": 0.8255882263183594
     },
     "10000_blocks": {
       "num_blocks": 10000,
-      "full_scan_latency_ms": 29.280697999638505,
-      "lsh_index_latency_ms": 1.0389990002295235,
-      "search_space_pruning_pct": 98.61999999999999,
-      "peak_memory_mb": 6.900301933288574
+      "full_scan_latency_ms": 28.135378001024947,
+      "lsh_index_latency_ms": 0.9733530023368075,
+      "search_space_pruning_pct": 98.48,
+      "peak_memory_mb": 7.032381057739258
     },
-    "100000_blocks": {
-      "num_blocks": 100000,
-      "full_scan_latency_ms": 302.5588170003175,
-      "lsh_index_latency_ms": 4.015939000964863,
-      "search_space_pruning_pct": 98.469,
-      "peak_memory_mb": 67.70197200775146
+    "50000_blocks": {
+      "num_blocks": 50000,
+      "full_scan_latency_ms": 102.77851299906615,
+      "lsh_index_latency_ms": 1.7795460007619113,
+      "search_space_pruning_pct": 98.508,
+      "peak_memory_mb": 34.68823051452637
     }
   }
 }
