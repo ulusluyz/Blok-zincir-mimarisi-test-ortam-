@@ -9,7 +9,7 @@ Evaluates match candidates, score distributions, and margins to detect:
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict, Any
 
 
 class DecisionType(Enum):
@@ -31,9 +31,42 @@ class CognitiveUncertaintyAuditor:
     """
     Audits block evaluation results and enforces explicit cognitive decision policies.
     """
-    def __init__(self, accept_threshold: float = 0.55, margin_threshold: float = 0.05):
+    def __init__(self, accept_threshold: float = 0.55, margin_threshold: float = 0.04):
         self.accept_threshold = accept_threshold
         self.margin_threshold = margin_threshold
+
+    def calibrate_on_validation_set(
+        self,
+        val_candidate_scores: List[List[Tuple[str, float]]],
+        val_expected_decisions: List[str]
+    ):
+        """
+        Tunes accept_threshold and margin_threshold EXCLUSIVELY on validation candidate scores.
+        Zero threshold tuning or fitting on test data!
+        """
+        best_acc = -1.0
+        best_acc_thresh = self.accept_threshold
+        best_margin_thresh = self.margin_threshold
+
+        for acc_t in [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80]:
+            for mar_t in [0.01, 0.02, 0.03, 0.04, 0.05, 0.08, 0.10]:
+                self.accept_threshold = acc_t
+                self.margin_threshold = mar_t
+
+                correct = 0
+                for c_scores, exp_dec in zip(val_candidate_scores, val_expected_decisions):
+                    dec = self.audit(c_scores)
+                    if dec.decision_type.value == exp_dec:
+                        correct += 1
+                acc = correct / len(val_expected_decisions) if val_expected_decisions else 0.0
+
+                if acc > best_acc:
+                    best_acc = acc
+                    best_acc_thresh = acc_t
+                    best_margin_thresh = mar_t
+
+        self.accept_threshold = best_acc_thresh
+        self.margin_threshold = best_margin_thresh
 
     def audit(
         self,
@@ -52,7 +85,6 @@ class CognitiveUncertaintyAuditor:
                 audit_explanation="Hiçbir blok adayı bulunamadı."
             )
 
-        # Sort by similarity descending
         sorted_candidates = sorted(candidate_scores, key=lambda x: x[1], reverse=True)
         top1_id, top1_score = sorted_candidates[0]
 

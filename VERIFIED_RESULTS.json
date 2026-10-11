@@ -2,34 +2,34 @@
   "overall_status": "KISMEN BAŞARILI",
   "total_test_cases": 29,
   "metrics": {
-    "indomain_top1_accuracy": 30.0,
-    "indomain_top3_accuracy": 80.0,
+    "indomain_top1_accuracy": 40.0,
+    "indomain_top3_accuracy": 75.0,
     "unseen_negation_accuracy": 100.0,
-    "cognitive_decision_accuracy": 37.93103448275862,
-    "multihop_deduction_accuracy": 100.0,
-    "retrieval_mAP_at_3": 51.28205128205129,
+    "cognitive_decision_accuracy": 55.172413793103445,
+    "multihop_deduction_accuracy": 25.0,
+    "retrieval_mAP_at_3": 66.88034188034189,
     "ood_true_reject_rate": 0.0,
     "ood_false_accept_rate": 100.0,
-    "ood_auroc": 50.0,
+    "ood_auroc": 53.84615384615385,
     "unselected_a_plus_read_ratio": 0.0,
     "latency": {
-      "mean_ms": 22.19557348263183,
-      "median_ms": 19.53409899942926,
-      "p95_ms": 20.533137200254714,
-      "max_ms": 102.85085500072455
+      "mean_ms": 19.86408665527114,
+      "median_ms": 20.21804399919347,
+      "p95_ms": 21.05396739934804,
+      "max_ms": 21.32274299947312
     },
     "subsystem_latencies": {
-      "feature_encoding_ms": 13.812794413689549,
-      "a_evaluation_ms": 8.069815724066475,
-      "a_plus_access_ms": 0.006672758586475915,
-      "relational_inference_ms": 0.03687686198802488
+      "feature_encoding_ms": 13.777317862306894,
+      "a_evaluation_ms": 5.697471965473158,
+      "a_plus_access_ms": 0.008658448395776916,
+      "relational_inference_ms": 0.07469196554728992
     },
-    "peak_memory_mb": 2.9312000274658203
+    "peak_memory_mb": 2.9585275650024414
   },
   "criteria": [
     {
       "metric_name": "InDomain_Top1_Accuracy",
-      "achieved": 30.0,
+      "achieved": 40.0,
       "target": 80.0,
       "operator": ">=",
       "status": "FAIL",
@@ -37,7 +37,7 @@
     },
     {
       "metric_name": "InDomain_Top3_Accuracy",
-      "achieved": 80.0,
+      "achieved": 75.0,
       "target": 90.0,
       "operator": ">=",
       "status": "FAIL",
@@ -53,7 +53,7 @@
     },
     {
       "metric_name": "Cognitive_Decision_Accuracy",
-      "achieved": 37.93103448275862,
+      "achieved": 55.172413793103445,
       "target": 80.0,
       "operator": ">=",
       "status": "FAIL",
@@ -61,10 +61,10 @@
     },
     {
       "metric_name": "MultiHop_Transitive_Inference",
-      "achieved": 100.0,
+      "achieved": 25.0,
       "target": 90.0,
       "operator": ">=",
-      "status": "PASS",
+      "status": "FAIL",
       "rationale": "Multi-hop relational deduction accuracy >= 90%"
     },
     {
@@ -85,7 +85,7 @@
     },
     {
       "metric_name": "Average_Query_Latency",
-      "achieved": 22.19557348263183,
+      "achieved": 19.86408665527114,
       "target": 50.0,
       "operator": "<=",
       "status": "PASS",
@@ -99,14 +99,14 @@
       "expected_category": "Hayvanlar",
       "predicted_top1": "Alakasız",
       "predicted_top1_score": 0.7265625,
-      "predicted_decision": "ÇELİŞKİLİ_KANIT",
+      "predicted_decision": "ACCEPT",
       "expected_decision": "ACCEPT"
     },
     {
       "test_id": "CB_004",
       "query": "Lehim havyası ve pasta ile devre kartı tamiri",
       "expected_category": "Elektronik",
-      "predicted_top1": "Tarih",
+      "predicted_top1": "Alakasız",
       "predicted_top1_score": 0.734375,
       "predicted_decision": "ÇELİŞKİLİ_KANIT",
       "expected_decision": "ACCEPT"
@@ -116,7 +116,7 @@
       "query": "İkinci dereceden denklem köklerini bulma",
       "expected_category": "Matematik",
       "predicted_top1": "Hayvanlar",
-      "predicted_top1_score": 0.8515625,
+      "predicted_top1_score": 0.84375,
       "predicted_decision": "ACCEPT",
       "expected_decision": "ACCEPT"
     },
@@ -125,8 +125,8 @@
       "query": "Özkütle ve suyun kaldırma kuvveti deneyi",
       "expected_category": "Fizik",
       "predicted_top1": "Biyoloji",
-      "predicted_top1_score": 0.734375,
-      "predicted_decision": "ÇELİŞKİLİ_KANIT",
+      "predicted_top1_score": 0.7265625,
+      "predicted_decision": "ACCEPT",
       "expected_decision": "ACCEPT"
     },
     {
@@ -134,7 +134,7 @@
       "query": "Ekosistemdeki besin zinciri ve klorofil",
       "expected_category": "Biyoloji",
       "predicted_top1": "Elektronik",
-      "predicted_top1_score": 0.7734375,
+      "predicted_top1_score": 0.7578125,
       "predicted_decision": "ACCEPT",
       "expected_decision": "ACCEPT"
     },
@@ -144,7 +144,7 @@
       "expected_category": "Tarih",
       "predicted_top1": "Fizik",
       "predicted_top1_score": 0.75,
-      "predicted_decision": "ÇELİŞKİLİ_KANIT",
+      "predicted_decision": "ACCEPT",
       "expected_decision": "ACCEPT"
     },
     {
@@ -152,7 +152,7 @@
       "query": "Tasavvuf edebiyatında Yunus Emre ilahileri",
       "expected_category": "Edebiyat",
       "predicted_top1": "Hayvanlar",
-      "predicted_top1_score": 0.71875,
+      "predicted_top1_score": 0.703125,
       "predicted_decision": "ÇELİŞKİLİ_KANIT",
       "expected_decision": "ACCEPT"
     },
@@ -161,33 +161,15 @@
       "query": "Pazar günleri sahil kenarında yürüyüş yapmak",
       "expected_category": "Alakasız",
       "predicted_top1": "Biyoloji",
-      "predicted_top1_score": 0.703125,
-      "predicted_decision": "ÇELİŞKİLİ_KANIT",
-      "expected_decision": "ACCEPT"
-    },
-    {
-      "test_id": "CB_NEG_003",
-      "query": "Ağaçtaki elmaları topla",
-      "expected_category": "Matematik",
-      "predicted_top1": "Selamlaşma",
-      "predicted_top1_score": 1.0,
-      "predicted_decision": "ÇELİŞKİLİ_KANIT",
-      "expected_decision": "ACCEPT"
-    },
-    {
-      "test_id": "CB_NEG_004",
-      "query": "Ağaçtaki elmaları toplama",
-      "expected_category": "Matematik",
-      "predicted_top1": "Selamlaşma",
-      "predicted_top1_score": 1.0,
-      "predicted_decision": "ÇELİŞKİLİ_KANIT",
+      "predicted_top1_score": 0.7109375,
+      "predicted_decision": "ACCEPT",
       "expected_decision": "ACCEPT"
     },
     {
       "test_id": "CB_NEG_006",
       "query": "Radyonun sesini yükseltme",
       "expected_category": "Elektronik",
-      "predicted_top1": "Selamlaşma",
+      "predicted_top1": "Alakasız",
       "predicted_top1_score": 1.0,
       "predicted_decision": "ÇELİŞKİLİ_KANIT",
       "expected_decision": "ACCEPT"
@@ -197,7 +179,7 @@
       "query": "Aslan hücresel organizma mıdır?",
       "expected_category": "Hayvanlar",
       "predicted_top1": "Matematik",
-      "predicted_top1_score": 0.8359375,
+      "predicted_top1_score": 0.8515625,
       "predicted_decision": "ACCEPT",
       "expected_decision": "ACCEPT"
     },
@@ -215,7 +197,7 @@
       "query": "Quark galaksi kümesi oluşturur mu?",
       "expected_category": "Fizik",
       "predicted_top1": "Elektronik",
-      "predicted_top1_score": 0.8046875,
+      "predicted_top1_score": 0.8125,
       "predicted_decision": "ACCEPT",
       "expected_decision": "ACCEPT"
     }

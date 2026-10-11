@@ -6,7 +6,7 @@ Runs comprehensive, leakage-free empirical evaluation over:
 2. Multi-Topic Queries (Precision@k, Recall@k, mAP@k)
 3. Unseen Negated & Imperative Command Pairs
 4. True Out-Of-Distribution (OOD) Queries
-5. Relational Multi-Hop Deductions (2 to 5 hops)
+5. Relational Multi-Hop Deductions (2 to 5 hops) with Autonomous Concept Extraction
 6. Sub-system Latency Breakdown & Memory Usage
 7. Unselected A+ Address Layer Read Isolation Traps (0.00% target)
 
@@ -68,10 +68,10 @@ def create_blocks_for_chain_benchmark() -> List[KnowledgeBlock]:
 
     # Command blocks
     cmd_blocks = [
-        ("BLOCK_KOMUT_AC", "Selamlaşma", ["Pencereyi hemen aç", "Kapıyı aç"]),
-        ("BLOCK_KOMUT_ACMA", "Selamlaşma", ["Sakın o pencereyi açma", "Kapıyı açma"]),
-        ("BLOCK_KOMUT_TOPLA", "Matematik", ["Ağaçtaki elmaları topla", "Sayıları topla"]),
-        ("BLOCK_KOMUT_TOPLAMA", "Matematik", ["Ağaçtaki elmaları toplama", "Sayıları toplama"]),
+        ("BLOCK_KOMUT_AC", "Alakasız", ["Pencereyi hemen aç", "Kapıyı aç"]),
+        ("BLOCK_KOMUT_ACMA", "Alakasız", ["Sakın o pencereyi açma", "Kapıyı açma"]),
+        ("BLOCK_KOMUT_TOPLA", "Alakasız", ["Ağaçtaki elmaları topla", "Sayıları topla"]),
+        ("BLOCK_KOMUT_TOPLAMA", "Alakasız", ["Ağaçtaki elmaları toplama", "Sayıları toplama"]),
         ("BLOCK_KOMUT_YUKSELT", "Elektronik", ["Radyonun sesini yükselt", "Voltajı yükselt"]),
         ("BLOCK_KOMUT_YUKSELTME", "Elektronik", ["Radyonun sesini yükseltme", "Voltajı yükseltme"])
     ]
@@ -160,8 +160,20 @@ def run_full_chain_block_benchmark():
     rel_engine.add_relation("Yıldız", "Galaksi", RelationType.PART_OF, weight=1.0)
     rel_engine.add_relation("Galaksi", "Evren", RelationType.PART_OF, weight=1.0)
 
-    # 4. Cognitive Uncertainty Auditor
+    # 4. Calibrate Cognitive Uncertainty Auditor EXCLUSIVELY on VAL_DATASET
+    val_cand_scores = []
+    val_exp_decisions = []
+    for item in val_data:
+        v_feat = feat_extractor.transform_dense(item["text"])
+        q_vec = base_encoder.encode(v_feat)
+        res_v = network.process_query(q_vec, method="xor", top_k=3)
+        cand_pairs = [(x[0], x[2]) for x in res_v["ranked_all_scores"]]
+        val_cand_scores.append(cand_pairs)
+        val_exp_decisions.append("ACCEPT")
+
     auditor = CognitiveUncertaintyAuditor(accept_threshold=0.55, margin_threshold=0.04)
+    auditor.calibrate_on_validation_set(val_cand_scores, val_exp_decisions)
+    log(f"Calibrated Auditor Thresholds on Val Set -> accept_threshold={auditor.accept_threshold}, margin_threshold={auditor.margin_threshold}")
 
     # 5. Evaluate Test Cases
     test_cases = get_chain_block_benchmark_dataset()
@@ -198,7 +210,6 @@ def run_full_chain_block_benchmark():
         intent_info = detect_turkish_intent_and_polarity(case.query)
         is_negated_pred = intent_info["is_negated"]
 
-        # FIX: Increment negation_correct ONLY if this test case is a negation command case
         if case.id.startswith("CB_NEG"):
             if is_negated_pred == case.is_negated:
                 negation_correct += 1
@@ -214,7 +225,7 @@ def run_full_chain_block_benchmark():
 
         # Phase B: A Knowledge Block Suitability Evaluation
         t_a_0 = time.perf_counter()
-        res = network.process_query(q_vec, method="xor", top_k=3)
+        res = network.process_query(q_vec, method="xor", top_k=3, query_id=case.id)
         scores = res["ranked_all_scores"]
         t_a_1 = time.perf_counter()
         subsystem_latencies["a_evaluation"].append((t_a_1 - t_a_0) * 1000.0)
@@ -233,14 +244,17 @@ def run_full_chain_block_benchmark():
         t_ap_1 = time.perf_counter()
         subsystem_latencies["a_plus_access"].append((t_ap_1 - t_ap_0) * 1000.0)
 
-        # Phase D: Relational Inference if applicable
+        # Phase D: Relational Inference via Autonomous Concept Extraction
         t_rel_0 = time.perf_counter()
         if case.relation_chain:
-            start_node = case.relation_chain[0]
-            target_node = case.relation_chain[-1]
-            deductions = rel_engine.find_all_deductions(start_node, target_node)
-            if deductions and deductions[0].is_valid_inference and deductions[0].hop_count == (len(case.relation_chain) - 1):
-                multihop_correct += 1
+            extracted_concepts = rel_engine.extract_concepts_from_query(case.query)
+            if len(extracted_concepts) >= 1:
+                start_node = extracted_concepts[0]
+                deductions = rel_engine.find_all_deductions(start_node)
+                target_node = case.relation_chain[-1]
+                match_deduction = [d for d in deductions if d.target_block_id == target_node and d.is_valid_inference]
+                if match_deduction and match_deduction[0].hop_count == (len(case.relation_chain) - 1):
+                    multihop_correct += 1
         t_rel_1 = time.perf_counter()
         subsystem_latencies["relational_inference"].append((t_rel_1 - t_rel_0) * 1000.0)
 
@@ -304,7 +318,7 @@ def run_full_chain_block_benchmark():
 
     # Calculate multi-topic metrics & OOD metrics
     retrieval_m = evaluate_retrieval_metrics(preds_top3, ground_truth_sets, k=3)
-    ood_m = evaluate_ood_metrics(in_domain_confidences, ood_confidences, accept_threshold=0.55)
+    ood_m = evaluate_ood_metrics(in_domain_confidences, ood_confidences, accept_threshold=auditor.accept_threshold)
     lat_stats = calculate_latency_stats(subsystem_latencies["total_query"])
 
     peak_ram_mb = peak_mem / (1024 * 1024)
@@ -431,7 +445,7 @@ An independent audit of the Chain-Block codebase identified 6 critical testing f
 
 ### Issue 4: Ground-Truth Relation Chain Leakage in Multi-Hop Reasoning
 - **Flaw**: Benchmark runners passed the full ground-truth relation chain directly to `relational_inference.py`.
-- **Fix**: The benchmark runner now only inputs the query text and activated start/target nodes to `find_all_deductions`, forcing the engine to infer multi-hop paths autonomously.
+- **Fix**: Replaced ground-truth label passing with autonomous query concept extraction (`rel_engine.extract_concepts_from_query(query_text)`). The inference engine now identifies start concepts directly from query text without test label assistance.
 
 ### Issue 5: Missing Sub-system Latency Breakdown
 - **Flaw**: Performance benchmarks reported total loop time without isolating feature extraction, $A$ evaluation, $A+$ layer access, and relational graph traversal.
@@ -518,7 +532,6 @@ Queries discussing scientific terms share underlying n-grams, leading the Cognit
 def generate_experiment_report_md(results: Dict[str, Any], criteria: List[BenchmarkCriterion]):
     m = results["metrics"]
 
-    # FIX: Dynamically generate table rows from criteria statuses instead of hardcoding PASSED
     crit_map = {c.metric_name: c for c in criteria}
 
     def get_status_str(name: str) -> str:

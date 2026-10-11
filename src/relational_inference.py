@@ -4,6 +4,7 @@ Learnable Relational A+ Layer & Multi-Hop Inference Engine.
 This module extends the standard A+ address layer with formal relational semantics:
 - Transitivity (e.g., IS_A, TRANSITIVE_GENERIC vs non-transitive KNOWS)
 - Symmetry and Directionality
+- Autonomous concept/entity extraction from natural language query text
 - CPU-native graph traversal for multi-hop transitive deductions (2 to 5 hops)
 - Rejection of invalid non-transitive deductions (e.g. Ali -> Can -> Efe does NOT imply Ali -> Efe).
 """
@@ -12,6 +13,8 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import List, Dict, Set, Tuple, Optional
 import math
+import re
+from src.features import normalize_turkish
 
 
 class RelationType(Enum):
@@ -107,14 +110,34 @@ class RelationalInferenceEngine:
         self.decay_factor = decay_factor
         self.max_hops = max_hops
         self.a_plus_layers: Dict[str, RelationalAddressLayer] = {}
+        self.known_concepts: Set[str] = set()
 
     def register_a_plus_layer(self, layer: RelationalAddressLayer):
         self.a_plus_layers[layer.source_block_id] = layer
+        self.known_concepts.add(layer.source_block_id)
+        for l in layer.links:
+            self.known_concepts.add(l.target_block_id)
 
     def add_relation(self, source_id: str, target_id: str, relation_type: RelationType, weight: float = 1.0, metadata: Dict = None):
         if source_id not in self.a_plus_layers:
             self.a_plus_layers[source_id] = RelationalAddressLayer(source_block_id=source_id)
         self.a_plus_layers[source_id].add_link(target_id, relation_type, weight, metadata)
+        self.known_concepts.add(source_id)
+        self.known_concepts.add(target_id)
+
+    def extract_concepts_from_query(self, query_text: str) -> List[str]:
+        """
+        Autonomously extracts known relational concepts present in query text without receiving ground truth annotations.
+        """
+        norm = normalize_turkish(query_text)
+        found = []
+        # Check known concepts against query text
+        for concept in sorted(self.known_concepts, key=len, reverse=True):
+            concept_norm = normalize_turkish(concept)
+            if concept_norm in norm:
+                found.append(concept)
+
+        return found
 
     def find_all_deductions(
         self,
@@ -140,7 +163,6 @@ class RelationalInferenceEngine:
             curr_id, path, curr_conf, visited = stack.pop()
 
             if target_block_id and curr_id == target_block_id and len(path) > 0:
-                # Validate transitivity of entire path
                 is_valid = True
                 invalid_reason = ""
                 if len(path) > 1:

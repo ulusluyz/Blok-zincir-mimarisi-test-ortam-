@@ -14,7 +14,7 @@ from src.bitwise import BinaryVector, similarity_xor_popcount, similarity_binari
 
 
 class AddressAccessViolation(Exception):
-    """Raised if an unactivated A+ Address Block's memory payload is accessed illegally."""
+    """Raised if an unactivated or unauthorized A+ Address Block's memory payload is accessed illegally."""
     pass
 
 
@@ -22,14 +22,15 @@ class AddressBlock:
     """
     A+ Block: Independent, variable-size connection layer.
     Contains target block IDs, learned connection weights, and payload metadata.
-    Enforces access control via software traps.
+    Enforces access control via software traps and authorization tokens.
     """
 
     def __init__(self, block_id: str, connections: Optional[Dict[str, float]] = None, payload: Optional[Dict[str, Any]] = None):
         self.block_id = block_id
         self._connections: Dict[str, float] = connections if connections is not None else {}
         self._payload: Dict[str, Any] = payload if payload is not None else {}
-        self.read_count: int = 0  # Empirical memory read tracker
+        self.read_count: int = 0                  # Legitimate memory read tracker
+        self.unauthorized_access_count: int = 0  # Security violation tracker
         self.is_activated: bool = False
         self.access_logs: List[Dict[str, Any]] = []
 
@@ -37,18 +38,35 @@ class AddressBlock:
         """Extensible: new connections can be added without changing fixed A block size."""
         self._connections[target_id] = weight
 
-    def read_layer(self, caller_token: str = "AUTHORIZED_ROUTER") -> Dict[str, Any]:
+    def read_layer(self, caller_token: str = "AUTHORIZED_ROUTER", query_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Accesses connection layer and returns payload & connections.
         Marks block as activated and logs access stack frame for audit.
+        Raises AddressAccessViolation if caller_token is not authorized.
         """
+        if caller_token != "AUTHORIZED_ROUTER":
+            self.unauthorized_access_count += 1
+            caller_frame = inspect.stack()[1]
+            self.access_logs.append({
+                "timestamp": time.perf_counter(),
+                "query_id": query_id,
+                "status": "VIOLATION",
+                "caller_function": caller_frame.function,
+                "caller_filename": caller_frame.filename,
+                "read_count": self.read_count
+            })
+            raise AddressAccessViolation(
+                f"Unauthorized direct access attempt on A+ AddressBlock '{self.block_id}' without router context!"
+            )
+
         self.is_activated = True
         self.read_count += 1
 
-        # Log stack caller frame for memory auditing
         caller_frame = inspect.stack()[1]
         self.access_logs.append({
             "timestamp": time.perf_counter(),
+            "query_id": query_id,
+            "status": "AUTHORIZED",
             "caller_function": caller_frame.function,
             "caller_filename": caller_frame.filename,
             "read_count": self.read_count
@@ -84,9 +102,9 @@ class KnowledgeBlock:
         self.evaluation_count += 1
         return sim_func(self.representation, Q)
 
-    def read_address_block(self) -> Dict[str, Any]:
+    def read_address_block(self, query_id: Optional[str] = None) -> Dict[str, Any]:
         """Triggers access to A+ connection layer upon activation."""
-        return self.address_block.read_layer()
+        return self.address_block.read_layer(caller_token="AUTHORIZED_ROUTER", query_id=query_id)
 
 
 SIMILARITY_FUNCTIONS = {
@@ -113,13 +131,13 @@ class BlockNetwork:
         Q: BinaryVector,
         method: str = "xor",
         threshold: Optional[float] = None,
-        top_k: Optional[int] = None
+        top_k: Optional[int] = None,
+        query_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         1. Evaluate all A blocks' mathematical suitability S(A, Q).
         2. Filter active blocks based on threshold or Top-K.
-        3. Activate and read A+ ONLY for activated blocks.
-        4. Track granular latencies and evaluated vs accessed counters.
+        3. Activate and read A+ ONLY for activated blocks using query session tracking.
         """
         sim_func = SIMILARITY_FUNCTIONS.get(method, similarity_xor_popcount)
 
@@ -145,7 +163,6 @@ class BlockNetwork:
         elif threshold is not None:
             active_blocks = [item for item in evaluated_scores if item[1] >= threshold]
         else:
-            # Default to Top-1 if neither specified
             active_blocks = evaluated_scores[:1]
         select_latency = time.perf_counter() - start_select_time
 
@@ -153,7 +170,7 @@ class BlockNetwork:
         start_read_time = time.perf_counter()
         accessed_a_plus_results = []
         for block, score in active_blocks:
-            a_plus_data = block.read_address_block()
+            a_plus_data = block.read_address_block(query_id=query_id)
             accessed_a_plus_results.append({
                 "block_id": block.block_id,
                 "category": block.category,

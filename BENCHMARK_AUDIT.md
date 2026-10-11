@@ -23,7 +23,7 @@ An independent audit of the Chain-Block codebase identified 6 critical testing f
 
 ### Issue 4: Ground-Truth Relation Chain Leakage in Multi-Hop Reasoning
 - **Flaw**: Benchmark runners passed the full ground-truth relation chain directly to `relational_inference.py`.
-- **Fix**: The benchmark runner now only inputs the query text and activated start/target nodes to `find_all_deductions`, forcing the engine to infer multi-hop paths autonomously.
+- **Fix**: Replaced ground-truth label passing with autonomous query concept extraction (`rel_engine.extract_concepts_from_query(query_text)`). The inference engine now identifies start concepts directly from query text without test label assistance.
 
 ### Issue 5: Missing Sub-system Latency Breakdown
 - **Flaw**: Performance benchmarks reported total loop time without isolating feature extraction, $A$ evaluation, $A+$ layer access, and relational graph traversal.
