@@ -2,62 +2,52 @@
   "baselines": {
     "keyword_matching": {
       "accuracy": 30.0,
-      "avg_latency_ms": 0.008766300015849993
+      "avg_latency_ms": 0.008345399874087889
     },
     "random_lsh": {
-      "accuracy": 20.0,
-      "avg_latency_ms": 2.9677725999135873
+      "accuracy": 30.0,
+      "avg_latency_ms": 6.1268449999261065
+    },
+    "naive_bayes": {
+      "accuracy": 30.0,
+      "avg_latency_ms": 0.4497425999943516
     }
   },
   "bit_length_comparison": {
     "64_bits": {
-      "accuracy": 30.0,
-      "latency_ms": 1.6888723999727517
+      "accuracy": 40.0,
+      "latency_ms": 1.6778599998360733
     },
     "128_bits": {
-      "accuracy": 40.0,
-      "latency_ms": 3.2590296999842394
+      "accuracy": 30.0,
+      "latency_ms": 3.1520827000349527
     },
     "256_bits": {
-      "accuracy": 40.0,
-      "latency_ms": 6.418481499895279
+      "accuracy": 30.0,
+      "latency_ms": 6.0933213999305735
     }
   },
   "scalability_scaling": {
-    "10_blocks": {
-      "num_blocks": 10,
-      "full_scan_latency_ms": 0.1588260001881281,
-      "lsh_index_latency_ms": 0.8461779998469865,
-      "search_space_pruning_pct": 0.0,
-      "peak_memory_mb": 0.016757965087890625
-    },
-    "100_blocks": {
-      "num_blocks": 100,
-      "full_scan_latency_ms": 0.29357899984461255,
-      "lsh_index_latency_ms": 0.8659149989398429,
-      "search_space_pruning_pct": 0.0,
-      "peak_memory_mb": 0.11383533477783203
-    },
     "1000_blocks": {
       "num_blocks": 1000,
-      "full_scan_latency_ms": 2.377067999987048,
-      "lsh_index_latency_ms": 1.1479320000944426,
-      "search_space_pruning_pct": 98.5,
-      "peak_memory_mb": 0.8105573654174805
+      "full_scan_latency_ms": 2.13024500044412,
+      "lsh_index_latency_ms": 1.015308998830733,
+      "search_space_pruning_pct": 97.89999999999999,
+      "peak_memory_mb": 0.8172674179077148
     },
     "10000_blocks": {
       "num_blocks": 10000,
-      "full_scan_latency_ms": 29.234620998977334,
-      "lsh_index_latency_ms": 1.0293109990016092,
-      "search_space_pruning_pct": 98.55000000000001,
-      "peak_memory_mb": 6.89041805267334
+      "full_scan_latency_ms": 29.280697999638505,
+      "lsh_index_latency_ms": 1.0389990002295235,
+      "search_space_pruning_pct": 98.61999999999999,
+      "peak_memory_mb": 6.900301933288574
     },
     "100000_blocks": {
       "num_blocks": 100000,
-      "full_scan_latency_ms": 328.6748059999809,
-      "lsh_index_latency_ms": 4.422134001288214,
-      "search_space_pruning_pct": 98.465,
-      "peak_memory_mb": 67.69688320159912
+      "full_scan_latency_ms": 302.5588170003175,
+      "lsh_index_latency_ms": 4.015939000964863,
+      "search_space_pruning_pct": 98.469,
+      "peak_memory_mb": 67.70197200775146
     }
   }
 }

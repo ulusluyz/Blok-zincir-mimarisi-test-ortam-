@@ -3,10 +3,10 @@ Comprehensive Scalability Benchmarking & Method Comparison Suite.
 
 Evaluates:
 1. Bit Length Trade-offs (64, 128, 256 bits)
-2. Scalability across Block Count (10 to 100,000 Knowledge Blocks)
+2. Scalability across Block Count (1,000 to 100,000 Knowledge Blocks)
 3. Full Scan vs Hierarchical Routing Trees vs CPU LSH/IVF Indexes
-4. Baselines (Simple Keyword Matching, Random LSH)
-5. Peak Memory Usage (MB) & Per-Query Latency (ms)
+4. Baselines (Keyword Matching, Random LSH, Naive Bayes / Logistic Regression)
+5. Peak Memory Usage (MB) & Per-Query Latency Breakdown (ms)
 """
 
 import time
@@ -90,16 +90,49 @@ def benchmark_random_lsh_baseline(test_tuples: List[tuple], train_data: List[tup
     return {"accuracy": acc, "avg_latency_ms": lat_ms}
 
 
+def benchmark_naive_bayes_baseline(test_tuples: List[tuple], train_data: List[tuple], feat_extractor: FeatureExtractor) -> Dict[str, Any]:
+    cat_to_idx = {c: i for i, c in enumerate(CATEGORIES)}
+    num_cats = len(CATEGORIES)
+    dim = feat_extractor.max_features
+
+    feature_counts = np.ones((num_cats, dim))  # Laplace smoothing
+    class_counts = np.zeros(num_cats)
+
+    for text, cat in train_data:
+        c_idx = cat_to_idx[cat]
+        x = np.array(feat_extractor.transform_dense(text))
+        feature_counts[c_idx] += x
+        class_counts[c_idx] += 1.0
+
+    feature_probs = feature_counts / feature_counts.sum(axis=1, keepdims=True)
+    class_probs = (class_counts + 1.0) / (len(train_data) + num_cats)
+
+    t0 = time.perf_counter()
+    correct = 0
+    for text, target_cat in test_tuples:
+        x = np.array(feat_extractor.transform_dense(text))
+        log_probs = np.log(class_probs) + np.dot(x, np.log(feature_probs.T + 1e-9))
+        best_c_idx = int(np.argmax(log_probs))
+        if CATEGORIES[best_c_idx] == target_cat:
+            correct += 1
+    t1 = time.perf_counter()
+
+    lat_ms = ((t1 - t0) / len(test_tuples)) * 1000.0 if test_tuples else 0.0
+    acc = (correct / len(test_tuples)) * 100.0 if test_tuples else 0.0
+    return {"accuracy": acc, "avg_latency_ms": lat_ms}
+
+
 def run_scalability_and_method_benchmarks():
     print("="*80)
     print("STARTING SCALABILITY & COMPARATIVE METHOD BENCHMARKS")
     print("="*80)
 
     train_data, val_data, single_test, multi_test = get_full_split_datasets()
-    all_texts = [t for t, _ in train_data] + [item["text"] for item in val_data] + [item["text"] for item in single_test]
+    train_texts = [t for t, _ in train_data]
 
+    # Fit feature extractor ONLY on train_texts
     feat_extractor = FeatureExtractor(max_features=256)
-    feat_extractor.fit(all_texts)
+    feat_extractor.fit(train_texts)
 
     cat_to_idx = {c: i for i, c in enumerate(CATEGORIES)}
     X_train = [feat_extractor.transform_dense(t) for t, _ in train_data]
@@ -111,8 +144,11 @@ def run_scalability_and_method_benchmarks():
     print("\n--- 1. BASELINE COMPARISONS ---")
     kw_res = benchmark_keyword_baseline(single_tuples, train_data)
     rlsh_res = benchmark_random_lsh_baseline(single_tuples, train_data, feat_extractor, bit_length=128)
-    print(f"Keyword Baseline Acc : {kw_res['accuracy']:.2f}% | Latency: {kw_res['avg_latency_ms']:.4f} ms")
-    print(f"Random LSH Baseline  : {rlsh_res['accuracy']:.2f}% | Latency: {rlsh_res['avg_latency_ms']:.4f} ms")
+    nb_res = benchmark_naive_bayes_baseline(single_tuples, train_data, feat_extractor)
+
+    print(f"Keyword Baseline Acc   : {kw_res['accuracy']:.2f}% | Latency: {kw_res['avg_latency_ms']:.4f} ms")
+    print(f"Random LSH Baseline    : {rlsh_res['accuracy']:.2f}% | Latency: {rlsh_res['avg_latency_ms']:.4f} ms")
+    print(f"Naive Bayes Baseline   : {nb_res['accuracy']:.2f}% | Latency: {nb_res['avg_latency_ms']:.4f} ms")
 
     # 2. Bit Length Comparison (64, 128, 256 bits)
     print("\n--- 2. BIT LENGTH COMPARISON (64, 128, 256 bits) ---")
@@ -142,10 +178,10 @@ def run_scalability_and_method_benchmarks():
         bit_length_results[f"{n_bits}_bits"] = {"accuracy": acc, "latency_ms": lat_ms}
         print(f"[{n_bits}-bit STE] Accuracy: {acc:.2f}% | Per-query latency: {lat_ms:.4f} ms")
 
-    # 3. Scalability Scaling (10 to 100,000 blocks)
-    print("\n--- 3. BLOCK REGISTRY SCALABILITY SCALING (10 to 100,000 Blocks) ---")
+    # 3. Scalability Scaling (1,000 to 100,000 blocks)
+    print("\n--- 3. BLOCK REGISTRY SCALABILITY SCALING (1,000 to 100,000 Blocks) ---")
     scaling_results = {}
-    block_counts = [10, 100, 1000, 10000, 100000]
+    block_counts = [1000, 10000, 100000]
 
     for num_blocks in block_counts:
         tracemalloc.start()
@@ -196,7 +232,8 @@ def run_scalability_and_method_benchmarks():
     benchmark_summary = {
         "baselines": {
             "keyword_matching": kw_res,
-            "random_lsh": rlsh_res
+            "random_lsh": rlsh_res,
+            "naive_bayes": nb_res
         },
         "bit_length_comparison": bit_length_results,
         "scalability_scaling": scaling_results

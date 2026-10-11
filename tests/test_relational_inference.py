@@ -32,19 +32,19 @@ def test_multi_hop_deduction_3_hops():
     assert best.hop_count == 3
     assert best.start_block_id == "Aslan"
     assert best.target_block_id == "Canlı"
+    assert best.is_valid_inference is True
     assert abs(best.total_confidence - (0.9 ** 3)) < 1e-4
 
 
-def test_transitive_generic_deduction():
-    # Setup chain: A > B, B > C, C > D, D > E (4 hops)
-    engine = RelationalInferenceEngine(decay_factor=0.8, max_hops=5)
-    engine.add_relation("A", "B", RelationType.TRANSITIVE_GENERIC, weight=1.0)
-    engine.add_relation("B", "C", RelationType.TRANSITIVE_GENERIC, weight=1.0)
-    engine.add_relation("C", "D", RelationType.TRANSITIVE_GENERIC, weight=1.0)
-    engine.add_relation("D", "E", RelationType.TRANSITIVE_GENERIC, weight=1.0)
+def test_non_transitive_relation_rejection():
+    # Setup non-transitive chain: Ali knows Can, Can knows Efe => Ali knows Efe MUST BE REJECTED
+    engine = RelationalInferenceEngine(decay_factor=0.9, max_hops=5)
+    engine.add_relation("Ali", "Can", RelationType.KNOWS, weight=1.0)
+    engine.add_relation("Can", "Efe", RelationType.KNOWS, weight=1.0)
 
-    deductions = engine.find_all_deductions("A", "E")
+    deductions = engine.find_all_deductions("Ali", "Efe")
     assert len(deductions) == 1
-    d = deductions[0]
-    assert d.hop_count == 4
-    assert d.is_valid_inference is True
+    res = deductions[0]
+    assert res.is_valid_inference is False
+    assert res.total_confidence == 0.0
+    assert "non-transitive" in res.explanation.lower()

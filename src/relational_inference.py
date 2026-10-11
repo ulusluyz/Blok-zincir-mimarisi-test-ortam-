@@ -1,10 +1,11 @@
 """
 Learnable Relational A+ Layer & Multi-Hop Inference Engine.
 
-This module extends the standard A+ address layer with relational semantics
-(e.g., IS_A, PART_OF, CAUSE_OF, PREREQUISITE_OF, OPPOSITE_OF, TRANSITIVE_GENERIC)
-and provides a CPU-native graph traversal engine for multi-hop transitive deductions
-(2 to 5 hops) across Knowledge Blocks without Transformer self-attention.
+This module extends the standard A+ address layer with formal relational semantics:
+- Transitivity (e.g., IS_A, TRANSITIVE_GENERIC vs non-transitive KNOWS)
+- Symmetry and Directionality
+- CPU-native graph traversal for multi-hop transitive deductions (2 to 5 hops)
+- Rejection of invalid non-transitive deductions (e.g. Ali -> Can -> Efe does NOT imply Ali -> Efe).
 """
 
 from dataclasses import dataclass, field
@@ -14,13 +15,33 @@ import math
 
 
 class RelationType(Enum):
-    IS_A = "IS_A"                        # Hierarchy / Subclass (e.g., Aslan -> Memeli)
-    PART_OF = "PART_OF"                  # Meronymy (e.g., Motor -> Araba)
-    CAUSE_OF = "CAUSE_OF"                # Causality (e.g., Yağmur -> Islaklık)
-    PREREQUISITE_OF = "PREREQUISITE_OF"  # Dependency (e.g., Un -> Ekmek)
-    OPPOSITE_OF = "OPPOSITE_OF"          # Antonym / Contradiction
-    DEPENDS_ON = "DEPENDS_ON"            # Logic Dependency
-    TRANSITIVE_GENERIC = "TRANSITIVE_GENERIC"  # Generic transitive relation (A > B, B > C => A > C)
+    IS_A = "IS_A"                        # Subclass / Superclass (Transitive, Directed)
+    PART_OF = "PART_OF"                  # Meronymy (Transitive, Directed)
+    CAUSE_OF = "CAUSE_OF"                # Causality (Transitive, Directed)
+    PREREQUISITE_OF = "PREREQUISITE_OF"  # Dependency (Transitive, Directed)
+    OPPOSITE_OF = "OPPOSITE_OF"          # Contradiction (Non-transitive, Symmetric)
+    DEPENDS_ON = "DEPENDS_ON"            # Logic Dependency (Transitive, Directed)
+    TRANSITIVE_GENERIC = "TRANSITIVE_GENERIC"  # Generic transitive (A > B, B > C => A > C)
+    KNOWS = "KNOWS"                      # Non-transitive acquaintance (A knows B, B knows C !=> A knows C)
+
+
+@dataclass
+class RelationSemantics:
+    is_transitive: bool
+    is_symmetric: bool
+    is_directed: bool
+
+
+RELATION_SEMANTICS_MAP: Dict[RelationType, RelationSemantics] = {
+    RelationType.IS_A: RelationSemantics(is_transitive=True, is_symmetric=False, is_directed=True),
+    RelationType.PART_OF: RelationSemantics(is_transitive=True, is_symmetric=False, is_directed=True),
+    RelationType.CAUSE_OF: RelationSemantics(is_transitive=True, is_symmetric=False, is_directed=True),
+    RelationType.PREREQUISITE_OF: RelationSemantics(is_transitive=True, is_symmetric=False, is_directed=True),
+    RelationType.OPPOSITE_OF: RelationSemantics(is_transitive=False, is_symmetric=True, is_directed=False),
+    RelationType.DEPENDS_ON: RelationSemantics(is_transitive=True, is_symmetric=False, is_directed=True),
+    RelationType.TRANSITIVE_GENERIC: RelationSemantics(is_transitive=True, is_symmetric=False, is_directed=True),
+    RelationType.KNOWS: RelationSemantics(is_transitive=False, is_symmetric=True, is_directed=False),
+}
 
 
 @dataclass
@@ -33,16 +54,12 @@ class RelationalLink:
 
 @dataclass
 class RelationalAddressLayer:
-    """
-    Relational A+ address layer attached to a specific A Knowledge Block.
-    """
     source_block_id: str
     links: List[RelationalLink] = field(default_factory=list)
 
     def add_link(self, target_block_id: str, relation_type: RelationType, weight: float = 1.0, metadata: Dict = None):
         if metadata is None:
             metadata = {}
-        # Avoid duplicate links of same type to same target, update weight if exists
         for l in self.links:
             if l.target_block_id == target_block_id and l.relation_type == relation_type:
                 l.weight = weight
@@ -84,6 +101,7 @@ class MultiHopDeductionResult:
 class RelationalInferenceEngine:
     """
     Multi-hop relational deduction engine traversing A+ address layers.
+    Enforces formal transitivity rules to reject invalid deductions.
     """
     def __init__(self, decay_factor: float = 0.85, max_hops: int = 5):
         self.decay_factor = decay_factor
@@ -103,13 +121,9 @@ class RelationalInferenceEngine:
         start_block_id: str,
         target_block_id: Optional[str] = None,
         allowed_relations: Optional[Set[RelationType]] = None,
-        min_confidence: float = 0.1,
+        min_confidence: float = 0.01,
         max_depth: Optional[int] = None
     ) -> List[MultiHopDeductionResult]:
-        """
-        Find deduction paths starting from `start_block_id`.
-        Uses Breadth-First / Depth-First search with cycle detection.
-        """
         if max_depth is None:
             max_depth = self.max_hops
 
@@ -118,7 +132,6 @@ class RelationalInferenceEngine:
         if start_block_id not in self.a_plus_layers:
             return results
 
-        # Stack entries: (current_block_id, current_path, current_confidence, visited_set)
         stack: List[Tuple[str, List[DeductionHop], float, Set[str]]] = [
             (start_block_id, [], 1.0, {start_block_id})
         ]
@@ -127,19 +140,29 @@ class RelationalInferenceEngine:
             curr_id, path, curr_conf, visited = stack.pop()
 
             if target_block_id and curr_id == target_block_id and len(path) > 0:
-                explanation = " -> ".join(
-                    [f"{h.from_block_id} --[{h.relation_type.value}]--> {h.to_block_id}" for h in path]
-                )
+                # Validate transitivity of entire path
+                is_valid = True
+                invalid_reason = ""
+                if len(path) > 1:
+                    for h in path:
+                        sem = RELATION_SEMANTICS_MAP.get(h.relation_type, RelationSemantics(is_transitive=False, is_symmetric=False, is_directed=True))
+                        if not sem.is_transitive:
+                            is_valid = False
+                            invalid_reason = f"Relational link '{h.relation_type.value}' is non-transitive. Multi-hop deduction rejected."
+                            break
+
+                path_str = " -> ".join([f"{h.from_block_id} --[{h.relation_type.value}]--> {h.to_block_id}" for h in path])
+                explanation = path_str if is_valid else f"INVALID DEDUCTION: {invalid_reason} ({path_str})"
+
                 results.append(MultiHopDeductionResult(
                     start_block_id=start_block_id,
                     target_block_id=curr_id,
                     path=path,
-                    total_confidence=curr_conf,
+                    total_confidence=curr_conf if is_valid else 0.0,
                     hop_count=len(path),
-                    is_valid_inference=True,
+                    is_valid_inference=is_valid,
                     explanation=explanation
                 ))
-                # Continue searching for other potential paths if bounded
                 if len(results) >= 50:
                     break
                 continue
@@ -156,7 +179,7 @@ class RelationalInferenceEngine:
                     continue
 
                 if link.target_block_id in visited:
-                    continue  # Cycle prevention
+                    continue
 
                 next_conf = curr_conf * link.weight * self.decay_factor
                 if next_conf < min_confidence:
@@ -174,21 +197,30 @@ class RelationalInferenceEngine:
                 new_visited = visited | {link.target_block_id}
 
                 if target_block_id is None and len(new_path) > 0:
-                    explanation = " -> ".join(
-                        [f"{h.from_block_id} --[{h.relation_type.value}]--> {h.to_block_id}" for h in new_path]
-                    )
+                    is_valid = True
+                    invalid_reason = ""
+                    if len(new_path) > 1:
+                        for h in new_path:
+                            sem = RELATION_SEMANTICS_MAP.get(h.relation_type, RelationSemantics(is_transitive=False, is_symmetric=False, is_directed=True))
+                            if not sem.is_transitive:
+                                is_valid = False
+                                invalid_reason = f"Relational link '{h.relation_type.value}' is non-transitive."
+                                break
+
+                    path_str = " -> ".join([f"{h.from_block_id} --[{h.relation_type.value}]--> {h.to_block_id}" for h in new_path])
+                    explanation = path_str if is_valid else f"INVALID DEDUCTION: {invalid_reason} ({path_str})"
+
                     results.append(MultiHopDeductionResult(
                         start_block_id=start_block_id,
                         target_block_id=link.target_block_id,
                         path=new_path,
-                        total_confidence=next_conf,
+                        total_confidence=next_conf if is_valid else 0.0,
                         hop_count=len(new_path),
-                        is_valid_inference=True,
+                        is_valid_inference=is_valid,
                         explanation=explanation
                     ))
 
                 stack.append((link.target_block_id, new_path, next_conf, new_visited))
 
-        # Sort results by confidence descending
         results.sort(key=lambda r: r.total_confidence, reverse=True)
         return results

@@ -1,46 +1,52 @@
 ================================================================================
-STARTING CHAIN-BLOCK ARCHITECTURE END-TO-END BENCHMARK EVALUATION
+STARTING CHAIN-BLOCK ARCHITECTURE VERIFIED BENCHMARK EVALUATION
 ================================================================================
-Base setup: 10 categories, 16 Knowledge Blocks.
+Setup: 10 categories, 60 train samples, 16 Knowledge Blocks.
 
---- EXECUTING TEST CASES ---
-[CB_001] Query: 'Merhaba, iyi günler nasılsınız?' -> Top-1: BLOCK_SELAMLAŞMA_01 (Selamlaşma, score=1.0000) | Decision: ACCEPT | Latency: 104.423 ms
-[CB_002] Query: 'Dünya hangi yıldızın etrafında döner?' -> Top-1: BLOCK_GEZEGENLER_01 (Gezegenler, score=1.0000) | Decision: ACCEPT | Latency: 19.938 ms
-[CB_003] Query: 'Aslanlar savanna bölgesinde nasıl avlanır?' -> Top-1: BLOCK_HAYVANLAR_01 (Hayvanlar, score=0.8203) | Decision: ACCEPT | Latency: 19.834 ms
-[CB_004] Query: 'BC337 transistörünün bacak yapısı nedir?' -> Top-1: BLOCK_ELEKTRONIK_01 (Elektronik, score=0.9609) | Decision: ACCEPT | Latency: 19.928 ms
-[CB_005] Query: '12 ile 8 in çarpımı kaçtır?' -> Top-1: BLOCK_MATEMATIK_01 (Matematik, score=1.0000) | Decision: ACCEPT | Latency: 18.949 ms
-[CB_006] Query: 'Kütleçekim ivmesi nedir?' -> Top-1: BLOCK_ELEKTRONIK_01 (Elektronik, score=0.9766) | Decision: ACCEPT | Latency: 19.046 ms
-[CB_007] Query: 'Hücre organelleri ve mitokondri görevi' -> Top-1: BLOCK_FIZIK_01 (Fizik, score=0.8516) | Decision: ACCEPT | Latency: 19.445 ms
-[CB_008] Query: 'İstanbul kaç yılında fethedildi?' -> Top-1: BLOCK_TARIH_01 (Tarih, score=0.7500) | Decision: ACCEPT | Latency: 18.612 ms
-[CB_009] Query: 'Araba sevdası romanı kimin eseridir?' -> Top-1: BLOCK_ELEKTRONIK_01 (Elektronik, score=0.7734) | Decision: ACCEPT | Latency: 19.471 ms
-[CB_010] Query: 'Hello, how are you doing today?' -> Top-1: BLOCK_MATEMATIK_01 (Matematik, score=0.8594) | Decision: ACCEPT | Latency: 19.015 ms
-[CB_011] Query: 'How many planets orbit around the Sun?' -> Top-1: BLOCK_HAYVANLAR_01 (Hayvanlar, score=0.6797) | Decision: ÇELİŞKİLİ_KANIT | Latency: 19.333 ms
-[CB_012] Query: 'What is the square root of 144?' -> Top-1: BLOCK_ELEKTRONIK_01 (Elektronik, score=0.8359) | Decision: ACCEPT | Latency: 19.101 ms
-[CB_NEG_001] Query: 'Buraya gel' -> Top-1: BLOCK_KOMUT_GEL (Selamlaşma, score=1.0000) | Decision: ÇELİŞKİLİ_KANIT | Latency: 17.543 ms
-[CB_NEG_002] Query: 'Sakın buraya gelme' -> Top-1: BLOCK_KOMUT_GELME (Selamlaşma, score=1.0000) | Decision: ÇELİŞKİLİ_KANIT | Latency: 17.432 ms
-[CB_NEG_003] Query: '5 ile 5 i çarp' -> Top-1: BLOCK_KOMUT_GEL (Selamlaşma, score=1.0000) | Decision: ÇELİŞKİLİ_KANIT | Latency: 17.164 ms
-[CB_NEG_004] Query: '5 ile 5 i çarpma' -> Top-1: BLOCK_KOMUT_GELME (Selamlaşma, score=1.0000) | Decision: ÇELİŞKİLİ_KANIT | Latency: 17.037 ms
-[CB_NEG_005] Query: 'Işığı kapat' -> Top-1: BLOCK_KOMUT_GEL (Selamlaşma, score=1.0000) | Decision: ÇELİŞKİLİ_KANIT | Latency: 17.298 ms
-[CB_NEG_006] Query: 'Işığı kapatma' -> Top-1: BLOCK_KOMUT_GELME (Selamlaşma, score=1.0000) | Decision: ÇELİŞKİLİ_KANIT | Latency: 16.660 ms
-[CB_UNK_001] Query: 'qwertyuiop asdfghjkl zxcvbnm 123890' -> Top-1: BLOCK_HAYVANLAR_01 (Hayvanlar, score=0.7734) | Decision: ACCEPT | Latency: 19.341 ms
-[CB_UNK_002] Query: 'Zırvalamak ve kuantum spatulası ile dondurma satmak' -> Top-1: BLOCK_TARIH_01 (Tarih, score=0.7266) | Decision: ÇELİŞKİLİ_KANIT | Latency: 19.323 ms
-[CB_UNK_003] Query: 'Xylophone submarine quantum banana pancake' -> Top-1: BLOCK_ALAKASIZ_01 (Alakasız, score=0.9922) | Decision: ACCEPT | Latency: 18.665 ms
-[CB_AMB_001] Query: 'Matematiksel fizikte ivme ve 12 çarpı 8 hesabının biyolojik hücreye etkisi' -> Top-1: BLOCK_MATEMATIK_01 (Matematik, score=0.9297) | Decision: ACCEPT | Latency: 19.651 ms
-[CB_AMB_002] Query: 'Elektronik devrede gezegenlerin orbit frekansı tarihi' -> Top-1: BLOCK_GEZEGENLER_01 (Gezegenler, score=0.8672) | Decision: ACCEPT | Latency: 19.193 ms
-[CB_HOP_2] Query: 'Aslan cankurtaran mıdır?' -> Top-1: BLOCK_HAYVANLAR_01 (Hayvanlar, score=0.8750) | Decision: ACCEPT | Latency: 18.128 ms
-[CB_HOP_3] Query: 'Aslan hücresel yapıda mıdır?' -> Top-1: BLOCK_HAYVANLAR_01 (Hayvanlar, score=0.8047) | Decision: ACCEPT | Latency: 18.480 ms
-[CB_HOP_4] Query: 'Güneş enerjisi fotosentez ile biyolojik kütleye dönüşür mü?' -> Top-1: BLOCK_BIYOLOJI_01 (Biyoloji, score=0.7891) | Decision: ACCEPT | Latency: 18.974 ms
-[CB_HOP_5] Query: 'Atom çekirdeğinden galaksi kümesine kütleçekim zinciri' -> Top-1: BLOCK_ELEKTRONIK_01 (Elektronik, score=0.7969) | Decision: ACCEPT | Latency: 18.673 ms
+--- EXECUTING BENCHMARK SUITE ---
+[CB_001] Query: 'Hayırlı günler, nasılsınız efendim?' -> Top-1: BLOCK_SELAMLAŞMA_01 (Selamlaşma, score=0.9531) | Decision: ACCEPT | Total Latency: 102.851 ms
+[CB_002] Query: 'Kızıl gezegen Mars yüzeyinde uzay keşfi' -> Top-1: BLOCK_GEZEGENLER_01 (Gezegenler, score=0.8750) | Decision: ACCEPT | Total Latency: 19.905 ms
+[CB_003] Query: 'Afrika savanlarında yaşayan vahşi kedigiller' -> Top-1: BLOCK_ALAKASIZ_01 (Alakasız, score=0.7266) | Decision: ÇELİŞKİLİ_KANIT | Total Latency: 19.534 ms
+[CB_004] Query: 'Lehim havyası ve pasta ile devre kartı tamiri' -> Top-1: BLOCK_TARIH_01 (Tarih, score=0.7344) | Decision: ÇELİŞKİLİ_KANIT | Total Latency: 19.613 ms
+[CB_005] Query: 'İkinci dereceden denklem köklerini bulma' -> Top-1: BLOCK_HAYVANLAR_01 (Hayvanlar, score=0.8516) | Decision: ACCEPT | Total Latency: 19.148 ms
+[CB_006] Query: 'Özkütle ve suyun kaldırma kuvveti deneyi' -> Top-1: BLOCK_BIYOLOJI_01 (Biyoloji, score=0.7344) | Decision: ÇELİŞKİLİ_KANIT | Total Latency: 19.198 ms
+[CB_007] Query: 'Ekosistemdeki besin zinciri ve klorofil' -> Top-1: BLOCK_ELEKTRONIK_01 (Elektronik, score=0.7734) | Decision: ACCEPT | Total Latency: 19.295 ms
+[CB_008] Query: 'Kadeş antlaşması tarihteki ilk yazılı barış metni' -> Top-1: BLOCK_FIZIK_01 (Fizik, score=0.7500) | Decision: ÇELİŞKİLİ_KANIT | Total Latency: 19.901 ms
+[CB_009] Query: 'Tasavvuf edebiyatında Yunus Emre ilahileri' -> Top-1: BLOCK_HAYVANLAR_01 (Hayvanlar, score=0.7188) | Decision: ÇELİŞKİLİ_KANIT | Total Latency: 19.270 ms
+[CB_010] Query: 'Pazar günleri sahil kenarında yürüyüş yapmak' -> Top-1: BLOCK_BIYOLOJI_01 (Biyoloji, score=0.7031) | Decision: ÇELİŞKİLİ_KANIT | Total Latency: 19.691 ms
+[CB_MUL_001] Query: 'Transistörün sıcaklıkla değişen davranışını termodinamik ve türevle açıkla' -> Top-1: BLOCK_MATEMATIK_01 (Matematik, score=0.6797) | Decision: ÇELİŞKİLİ_KANIT | Total Latency: 20.508 ms
+[CB_MUL_002] Query: 'Mars yüzeyindeki uzay araçlarının elektronik çip ve yörünge mekaniği' -> Top-1: BLOCK_FIZIK_01 (Fizik, score=0.8750) | Decision: ACCEPT | Total Latency: 20.055 ms
+[CB_MUL_003] Query: 'Yunusların sonar sistemi ve biyonik devre çip entegrasyonu' -> Top-1: BLOCK_MATEMATIK_01 (Matematik, score=0.7891) | Decision: ACCEPT | Total Latency: 19.806 ms
+[CB_MUL_004] Query: 'Osmanlı dönemindeki divan edebiyatı ve edebi eserlerin tarihi incelemesi' -> Top-1: BLOCK_EDEBIYAT_01 (Edebiyat, score=1.0000) | Decision: ACCEPT | Total Latency: 20.451 ms
+[CB_NEG_001] Query: 'Pencereyi hemen aç' -> Top-1: BLOCK_KOMUT_ACMA (Selamlaşma, score=1.0000) | Decision: ÇELİŞKİLİ_KANIT | Total Latency: 17.730 ms
+[CB_NEG_002] Query: 'Sakın o pencereyi açma' -> Top-1: BLOCK_KOMUT_ACMA (Selamlaşma, score=1.0000) | Decision: ÇELİŞKİLİ_KANIT | Total Latency: 17.923 ms
+[CB_NEG_003] Query: 'Ağaçtaki elmaları topla' -> Top-1: BLOCK_KOMUT_ACMA (Selamlaşma, score=1.0000) | Decision: ÇELİŞKİLİ_KANIT | Total Latency: 17.850 ms
+[CB_NEG_004] Query: 'Ağaçtaki elmaları toplama' -> Top-1: BLOCK_KOMUT_ACMA (Selamlaşma, score=1.0000) | Decision: ÇELİŞKİLİ_KANIT | Total Latency: 18.625 ms
+[CB_NEG_005] Query: 'Radyonun sesini yükselt' -> Top-1: BLOCK_KOMUT_YUKSELT (Elektronik, score=1.0000) | Decision: ÇELİŞKİLİ_KANIT | Total Latency: 18.192 ms
+[CB_NEG_006] Query: 'Radyonun sesini yükseltme' -> Top-1: BLOCK_KOMUT_ACMA (Selamlaşma, score=1.0000) | Decision: ÇELİŞKİLİ_KANIT | Total Latency: 17.760 ms
+[CB_OOD_001] Query: 'qwertyuiop asdfghjkl zxcvbnm 123890' -> Top-1: BLOCK_SELAMLAŞMA_01 (Selamlaşma, score=0.8047) | Decision: ACCEPT | Total Latency: 19.629 ms
+[CB_OOD_002] Query: 'Zırvalamak ve kuantum spatulası ile dondurma satmak' -> Top-1: BLOCK_TARIH_01 (Tarih, score=0.7969) | Decision: ACCEPT | Total Latency: 19.723 ms
+[CB_OOD_003] Query: 'Xylophone submarine quantum banana pancake' -> Top-1: BLOCK_ALAKASIZ_01 (Alakasız, score=0.9922) | Decision: ACCEPT | Total Latency: 19.372 ms
+[CB_AMB_001] Query: 'Matematiksel fizikte ivme ve 12 çarpı 8 hesabının biyolojik hücreye etkisi' -> Top-1: BLOCK_MATEMATIK_01 (Matematik, score=0.9609) | Decision: ACCEPT | Total Latency: 20.550 ms
+[CB_AMB_002] Query: 'Elektronik devrede gezegenlerin orbit frekansı tarihi' -> Top-1: BLOCK_ELEKTRONIK_01 (Elektronik, score=0.7812) | Decision: ACCEPT | Total Latency: 20.048 ms
+[CB_HOP_2] Query: 'Aslan canlı mıdır?' -> Top-1: BLOCK_HAYVANLAR_01 (Hayvanlar, score=0.8438) | Decision: ACCEPT | Total Latency: 18.775 ms
+[CB_HOP_3] Query: 'Aslan hücresel organizma mıdır?' -> Top-1: BLOCK_MATEMATIK_01 (Matematik, score=0.8359) | Decision: ACCEPT | Total Latency: 19.273 ms
+[CB_HOP_4] Query: 'Güneş enerjisi kütleye dönüşür mü?' -> Top-1: BLOCK_ELEKTRONIK_01 (Elektronik, score=0.8359) | Decision: ACCEPT | Total Latency: 19.361 ms
+[CB_HOP_5] Query: 'Quark galaksi kümesi oluşturur mu?' -> Top-1: BLOCK_ELEKTRONIK_01 (Elektronik, score=0.8047) | Decision: ACCEPT | Total Latency: 19.633 ms
 
 ================================================================================
 BENCHMARK EVALUATION SUMMARY
 ================================================================================
-Total Test Cases Evaluated: 27
-Top-1 Category Accuracy   : 59.26%
-Top-3 Category Accuracy   : 74.07%
-Negation Disambiguation Acc: 92.59%
-Cognitive Decision Acc    : 55.56%
-Multi-Hop Deduction Acc   : 100.00%
-Average Query Latency     : 21.876 ms
-Peak Memory Usage         : 2.89 MB
-A+ Layer Reads / Eval     : 81 / 432 (18.75%)
+Overall Empirical Status     : KISMEN BAŞARILI
+Total Test Cases Evaluated   : 29
+In-Domain Top-1 Accuracy     : 30.00%
+In-Domain Top-3 Accuracy     : 80.00%
+Unseen Negation Disambig Acc : 100.00%
+Cognitive Decision Acc       : 37.93%
+Multi-Hop Deduction Acc      : 100.00%
+OOD True Reject Rate (TRR)   : 0.00%
+OOD False Accept Rate (FAR)  : 100.00%
+Unselected A+ Read Ratio     : 0.00%
+Average Query Latency (Mean) : 22.196 ms
+Query Latency (P95)          : 20.533 ms
+Peak Memory Usage            : 2.93 MB
